@@ -1,0 +1,104 @@
+# Experiment 4: Region Failure Simulation
+# What it does: Stops the primary region EC2 instance.
+#               Route 53 health check fails → traffic auto-shifts to DR.
+#               Then restarts EC2 to test recovery.
+#
+# What we expect: Route 53 detects failure within 30s (3 x 10s checks).
+#                 DNS failover propagates within 60s (TTL=30s).
+#                 Total user-visible downtime < 2 minutes.
+#                 DR region handles all traffic without errors.
+#
+# SLO being tested: RTO (Regional) < 2 minutes
+#
+# NOTE: This experiment uses a Kubernetes Job (not a LitmusChaos CRD)
+#       because it calls AWS APIs to stop EC2 — not a pod-level action.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: region-failure-experiment
+  namespace: chaos-dr
+  labels:
+    experiment: region-failure
+    phase: "4"
+spec:
+  backoffLimit: 0   # do not retry on failure — region chaos must be deliberate
+  template:
+    spec:
+      serviceAccountName: chaos-runner
+      restartPolicy: Never
+
+      containers:
+        - name: chaos-runner
+          image: amazon/aws-cli:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              PRIMARY_REGION="us-east-1"
+              DR_REGION="us-west-2"
+              PROJECT="chaos-dr"
+              RECOVERY_WAIT=120   # seconds before restarting primary
+
+              echo "=== Region Failure Experiment START ==="
+              echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+              # Get primary EC2 instance ID
+              INSTANCE_ID=$(aws ec2 describe-instances \
+                --region "$PRIMARY_REGION" \
+                --filters "Name=tag:Project,Values=${PROJECT}" \
+                          "Name=tag:Region,Values=primary" \
+                          "Name=instance-state-name,Values=running" \
+                --query "Reservations[0].Instances[0].InstanceId" \
+                --output text)
+
+              if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+                echo "ERROR: Could not find primary EC2 instance. Aborting."
+                exit 1
+              fi
+
+              echo "[1/5] Stopping primary EC2: $INSTANCE_ID"
+              aws ec2 stop-instances --instance-ids "$INSTANCE_ID" --region "$PRIMARY_REGION"
+              echo "Primary instance stopped at $(date -u +%H:%M:%SZ)"
+
+              echo "[2/5] Waiting for Route 53 health check to detect failure..."
+              echo "      (Health check polls every 10s, threshold=3 → ~30s to mark unhealthy)"
+              sleep 40
+
+              echo "[3/5] Verifying DR is serving traffic..."
+              DR_IP=$(aws ec2 describe-addresses \
+                --filters "Name=tag:Project,Values=${PROJECT}" "Name=tag:Name,Values=*dr*" \
+                --query "Addresses[0].PublicIp" --output text --region "$DR_REGION")
+
+              for i in $(seq 1 12); do
+                if curl -sf --max-time 5 "http://${DR_IP}:30080/health/live" > /dev/null; then
+                  echo "      DR is healthy — failover confirmed at $(date -u +%H:%M:%SZ)"
+                  break
+                fi
+                echo "      Attempt $i: DR not responding yet, waiting 10s..."
+                sleep 10
+              done
+
+              echo "[4/5] Holding chaos for ${RECOVERY_WAIT}s (simulating real outage duration)..."
+              sleep "$RECOVERY_WAIT"
+
+              echo "[5/5] Restarting primary EC2 (recovery phase)..."
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID" --region "$PRIMARY_REGION"
+
+              echo "Waiting for primary to come back online..."
+              aws ec2 wait instance-running \
+                --instance-ids "$INSTANCE_ID" \
+                --region "$PRIMARY_REGION"
+
+              echo "Primary EC2 is running again at $(date -u +%H:%M:%SZ)"
+              echo "=== Region Failure Experiment COMPLETE ==="
+              echo ""
+              echo "Next step: Route 53 will auto-fail-back when health check passes."
+              echo "Check Grafana for failover timeline and recovery metrics."
+
+          env:
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+          # AWS credentials from EC2 instance role (no hardcoded keys)
+          # The K3s node must have an IAM role with ec2:StopInstances, ec2:StartInstances

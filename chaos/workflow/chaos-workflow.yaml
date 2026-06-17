@@ -1,0 +1,103 @@
+# Chaos Workflow — runs all experiments in sequence with cooldown between each.
+# Experiments run: pod-delete → network-latency → cpu-stress
+# Region-failure is NOT in the automated workflow — it's too destructive to run unattended.
+# Run region-failure manually: kubectl apply -f chaos/experiments/04-region-failure.yaml
+#
+# This is implemented as a Kubernetes Job that applies experiments one by one
+# and waits for each ChaosResult before proceeding.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chaos-workflow
+  namespace: chaos-dr
+  labels:
+    app: chaos-workflow
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccountName: chaos-runner
+      restartPolicy: Never
+
+      containers:
+        - name: workflow-runner
+          image: bitnami/kubectl:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              NAMESPACE="chaos-dr"
+              COOLDOWN=30   # seconds between experiments
+
+              log() { echo "[$(date -u +%H:%M:%SZ)] $1"; }
+
+              wait_for_result() {
+                local engine=$1
+                local max_wait=300   # 5 minute timeout per experiment
+                local elapsed=0
+
+                log "Waiting for $engine to complete..."
+                while [ $elapsed -lt $max_wait ]; do
+                  VERDICT=$(kubectl get chaosresult "${engine}-pod-delete" \
+                    -n "$NAMESPACE" \
+                    -o jsonpath='{.status.experimentStatus.verdict}' 2>/dev/null || echo "Awaited")
+
+                  # Handle different result name patterns
+                  if [ "$VERDICT" = "Awaited" ]; then
+                    VERDICT=$(kubectl get chaosresult -n "$NAMESPACE" \
+                      -l chaosUID=$(kubectl get chaosengine "$engine" -n "$NAMESPACE" \
+                        -o jsonpath='{.metadata.uid}' 2>/dev/null || echo "") \
+                      -o jsonpath='{.items[0].status.experimentStatus.verdict}' 2>/dev/null || echo "Awaited")
+                  fi
+
+                  if [ "$VERDICT" = "Pass" ]; then
+                    log "$engine: PASS"
+                    return 0
+                  elif [ "$VERDICT" = "Fail" ]; then
+                    log "$engine: FAIL — check ChaosResult for probe failures"
+                    return 1
+                  fi
+
+                  sleep 10
+                  elapsed=$((elapsed + 10))
+                done
+
+                log "$engine: TIMEOUT after ${max_wait}s"
+                return 1
+              }
+
+              log "=== Chaos Workflow START ==="
+
+              # ── Experiment 1: Pod Delete ──────────────────────────────────
+              log "[1/3] Applying pod-delete experiment..."
+              kubectl apply -f /experiments/01-pod-delete.yaml
+              wait_for_result "pod-delete-engine"
+              log "Cooldown ${COOLDOWN}s..."
+              sleep $COOLDOWN
+
+              # ── Experiment 2: Network Latency ─────────────────────────────
+              log "[2/3] Applying network-latency experiment..."
+              kubectl apply -f /experiments/02-network-latency.yaml
+              wait_for_result "network-latency-engine"
+              log "Cooldown ${COOLDOWN}s..."
+              sleep $COOLDOWN
+
+              # ── Experiment 3: CPU Stress ──────────────────────────────────
+              log "[3/3] Applying cpu-stress experiment..."
+              kubectl apply -f /experiments/03-cpu-stress.yaml
+              wait_for_result "cpu-stress-engine"
+
+              log "=== Chaos Workflow COMPLETE ==="
+              log "Check ChaosResults: kubectl get chaosresult -n chaos-dr"
+              log "Check Grafana:      http://<node-ip>:32000"
+
+          volumeMounts:
+            - name: experiments
+              mountPath: /experiments
+
+      volumes:
+        - name: experiments
+          configMap:
+            name: chaos-experiments

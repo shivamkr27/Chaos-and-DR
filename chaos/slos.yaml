@@ -1,0 +1,84 @@
+# Service Level Objectives (SLOs)
+# Define FIRST, run chaos SECOND to see if you meet them.
+# This is the SRE approach — chaos tests your SLOs, not random breakage.
+#
+# How to read this:
+#   slo_name:     what we're measuring
+#   target:       the threshold we must stay within
+#   how_measured: which Prometheus metric or probe
+#   chaos_test:   which experiment validates this SLO
+
+slos:
+
+  - name: availability
+    description: "System serves requests successfully"
+    target: "99.5% of requests succeed (HTTP 2xx) over any 5-minute window"
+    prometheus_query: |
+      (sum(rate(http_requests_total{status=~"2.."}[5m]))
+       / sum(rate(http_requests_total[5m]))) * 100
+    alert_threshold: "< 99.5"
+    chaos_tests:
+      - pod-delete        # 1 of 3 pods dying — remaining 2 should absorb
+      - network-latency   # slowness must not cause 500s
+    error_budget_per_month: "3.6 hours"   # 0.5% of 30 days
+
+  - name: pod_recovery_time
+    description: "Killed pods are rescheduled and ready within 30 seconds"
+    target: "Pod Ready within 30 seconds of deletion"
+    prometheus_query: |
+      kube_pod_status_ready{namespace="chaos-dr", condition="true"}
+    how_to_check: |
+      kubectl get events -n chaos-dr --sort-by=.lastTimestamp | grep -E "Killing|Started|Ready"
+    chaos_tests:
+      - pod-delete
+    pass_criteria: "Probe stays green throughout 60s pod-delete experiment"
+
+  - name: latency_under_degradation
+    description: "P99 latency stays under 2 seconds even during network chaos"
+    target: "P99 response time < 2000ms during 300ms network latency injection"
+    prometheus_query: |
+      histogram_quantile(0.99,
+        sum(rate(http_request_duration_seconds_bucket{namespace="chaos-dr"}[5m]))
+        by (le)
+      ) * 1000
+    alert_threshold: "> 2000"
+    chaos_tests:
+      - network-latency
+
+  - name: hpa_scale_time
+    description: "HPA adds pods within 90 seconds of sustained CPU spike"
+    target: "currentReplicas > minReplicas within 90 seconds of CPU > 60%"
+    prometheus_query: |
+      kube_horizontalpodautoscaler_status_current_replicas{
+        namespace="chaos-dr",
+        horizontalpodautoscaler="chaos-dr-app"
+      }
+    chaos_tests:
+      - cpu-stress
+    pass_criteria: "Replica count increases from 3 to >3 before experiment ends"
+
+  - name: regional_rto
+    description: "Traffic fails over to DR region within 2 minutes of primary failure"
+    target: "RTO (Regional) < 120 seconds"
+    how_measured: |
+      Time from EC2 stop → DR health probe passes.
+      Measured in Grafana: failover_event timestamp vs first_dr_success timestamp.
+    sub_targets:
+      route53_detection: "< 30 seconds  (3 x 10s health check intervals)"
+      dns_propagation:   "< 30 seconds  (TTL=30s)"
+      dr_app_readiness:  "< 60 seconds  (already running, just needs traffic)"
+      total_rto:         "< 120 seconds"
+    chaos_tests:
+      - region-failure
+
+  - name: regional_rpo
+    description: "No committed writes are lost during a regional failover"
+    target: "RPO < 5 seconds (PostgreSQL replication lag)"
+    prometheus_query: |
+      pg_replication_lag_seconds
+    alert_threshold: "> 5"
+    chaos_tests:
+      - region-failure
+    notes: |
+      PostgreSQL async streaming replication has ~millisecond lag under normal conditions.
+      Alert fires if lag exceeds 5 seconds — indicates replication is falling behind.

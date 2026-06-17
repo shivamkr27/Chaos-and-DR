@@ -1,0 +1,55 @@
+# Helm values for prometheus-community/prometheus (standalone, no Operator)
+# Works on single-node K3s / t3.micro
+#
+# Apply with:
+#   helm upgrade prometheus prometheus-community/prometheus \
+#     --namespace monitoring -f monitoring/prometheus/prometheus-values.yaml
+
+server:
+  service:
+    type: NodePort
+    nodePort: 32001
+  persistentVolume:
+    enabled: false
+  retention: "3d"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  # Extra scrape configs (added to default kubernetes scraping)
+  extraScrapeConfigs: |
+    # Scrape our app's /metrics endpoint via pod discovery
+    - job_name: "chaos-dr-app"
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ["chaos-dr"]
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          regex: chaos-dr-app
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_ip]
+          target_label: __address__
+          replacement: "${1}:3000"
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+
+alertmanager:
+  enabled: false
+
+pushgateway:
+  enabled: false
+
+# Disable kube-state-metrics and node-exporter to save memory
+kube-state-metrics:
+  resources:
+    limits:
+      memory: "64Mi"
+
+prometheus-node-exporter:
+  enabled: false

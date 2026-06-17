@@ -1,0 +1,7 @@
+# Fill after BOTH region-primary and region-dr are applied
+
+project        = "chaos-dr"
+domain_name    = "chaos-dr.yourdomain.com"
+primary_k3s_ip = "1.2.3.4"    # from: cd terraform/region-primary && terraform output k3s_public_ip
+dr_k3s_ip      = "5.6.7.8"    # from: cd terraform/region-dr     && terraform output k3s_public_ip
+alert_email    = "you@email.com"

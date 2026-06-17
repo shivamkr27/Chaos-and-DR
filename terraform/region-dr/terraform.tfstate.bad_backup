@@ -1,0 +1,901 @@
+{
+  "version": 4,
+  "terraform_version": "1.15.6",
+  "serial": 40,
+  "lineage": "d541aa3f-059c-63e6-0b78-171dcfb4e262",
+  "outputs": {
+    "app_url": {
+      "value": "http://44.253.7.188:30080",
+      "type": "string"
+    },
+    "grafana_url": {
+      "value": "http://44.253.7.188:32000",
+      "type": "string"
+    },
+    "k3s_public_ip": {
+      "value": "44.253.7.188",
+      "type": "string"
+    },
+    "rds_replica_endpoint": {
+      "value": "chaos-dr-dr-postgres-replica.cxkqk6qks00p.us-west-2.rds.amazonaws.com",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "module": "module.k3s",
+      "mode": "data",
+      "type": "aws_ami",
+      "name": "al2023",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "architecture": "x86_64",
+            "arn": "arn:aws:ec2:us-west-2::image/ami-050df560689a53457",
+            "block_device_mappings": [
+              {
+                "device_name": "/dev/xvda",
+                "ebs": {
+                  "delete_on_termination": "true",
+                  "encrypted": "false",
+                  "iops": "3000",
+                  "snapshot_id": "snap-069d0abe6944f0e64",
+                  "throughput": "125",
+                  "volume_initialization_rate": "0",
+                  "volume_size": "8",
+                  "volume_type": "gp3"
+                },
+                "no_device": "",
+                "virtual_name": ""
+              }
+            ],
+            "boot_mode": "uefi-preferred",
+            "creation_date": "2026-06-11T18:08:29.000Z",
+            "deprecation_time": "2026-09-09T22:59:00.000Z",
+            "description": "Amazon Linux 2023 AMI 2023.12.20260611.0 x86_64 HVM kernel-6.12",
+            "ena_support": true,
+            "executable_users": null,
+            "filter": [
+              {
+                "name": "name",
+                "values": [
+                  "al2023-ami-*-x86_64"
+                ]
+              },
+              {
+                "name": "virtualization-type",
+                "values": [
+                  "hvm"
+                ]
+              }
+            ],
+            "hypervisor": "xen",
+            "id": "ami-050df560689a53457",
+            "image_id": "ami-050df560689a53457",
+            "image_location": "amazon/al2023-ami-2023.12.20260611.0-kernel-6.12-x86_64",
+            "image_owner_alias": "amazon",
+            "image_type": "machine",
+            "imds_support": "v2.0",
+            "include_deprecated": false,
+            "kernel_id": "",
+            "last_launched_time": "",
+            "most_recent": true,
+            "name": "al2023-ami-2023.12.20260611.0-kernel-6.12-x86_64",
+            "name_regex": null,
+            "owner_id": "137112412989",
+            "owners": [
+              "amazon"
+            ],
+            "platform": "",
+            "platform_details": "Linux/UNIX",
+            "product_codes": [],
+            "public": true,
+            "ramdisk_id": "",
+            "root_device_name": "/dev/xvda",
+            "root_device_type": "ebs",
+            "root_snapshot_id": "snap-069d0abe6944f0e64",
+            "sriov_net_support": "simple",
+            "state": "available",
+            "state_reason": {
+              "code": "UNSET",
+              "message": "UNSET"
+            },
+            "tags": {},
+            "timeouts": null,
+            "tpm_support": "",
+            "uefi_data": null,
+            "usage_operation": "RunInstances",
+            "virtualization_type": "hvm"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_iam_instance_profile",
+      "name": "k3s_node",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::318827119970:instance-profile/chaos-dr-dr-k3s-node-profile",
+            "create_date": "2026-06-16T18:56:30Z",
+            "id": "chaos-dr-dr-k3s-node-profile",
+            "name": "chaos-dr-dr-k3s-node-profile",
+            "name_prefix": "",
+            "path": "/",
+            "role": "chaos-dr-dr-k3s-node-role",
+            "tags": null,
+            "tags_all": {},
+            "unique_id": "AIPAUUO4TYVRA4HFGYLHO"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.k3s.aws_iam_role.k3s_node"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "k3s_node",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::318827119970:role/chaos-dr-dr-k3s-node-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2026-06-16T18:56:28Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "chaos-dr-dr-k3s-node-role",
+            "inline_policy": [],
+            "managed_policy_arns": [],
+            "max_session_duration": 3600,
+            "name": "chaos-dr-dr-k3s-node-role",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Project": "chaos-dr"
+            },
+            "unique_id": "AROAUUO4TYVRN7FVGFIB4"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "k3s_node",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "chaos-dr-dr-k3s-node-role:chaos-dr-dr-k3s-node-policy",
+            "name": "chaos-dr-dr-k3s-node-policy",
+            "name_prefix": "",
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":[\"ec2:StopInstances\",\"ec2:StartInstances\",\"ec2:DescribeInstances\",\"ec2:DescribeAddresses\"],\"Condition\":{\"StringEquals\":{\"aws:ResourceTag/Project\":\"chaos-dr\"}},\"Effect\":\"Allow\",\"Resource\":\"*\",\"Sid\":\"EC2ChaosControl\"},{\"Action\":[\"route53:ListHostedZones\",\"route53:ChangeResourceRecordSets\",\"route53:ListHealthChecks\",\"route53:GetHealthCheckStatus\"],\"Effect\":\"Allow\",\"Resource\":\"*\",\"Sid\":\"Route53Failover\"},{\"Action\":[\"rds:PromoteReadReplica\",\"rds:DescribeDBInstances\"],\"Effect\":\"Allow\",\"Resource\":\"*\",\"Sid\":\"RDSPromotion\"},{\"Action\":[\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":\"arn:aws:secretsmanager:*:*:secret:chaos-dr/*\",\"Sid\":\"SecretAccess\"}]}",
+            "role": "chaos-dr-dr-k3s-node-role"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.k3s.aws_iam_role.k3s_node"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_iam_role_policy_attachment",
+      "name": "ssm",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "chaos-dr-dr-k3s-node-role-20260616185628232100000001",
+            "policy_arn": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+            "role": "chaos-dr-dr-k3s-node-role"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.k3s.aws_iam_role.k3s_node"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_key_pair",
+      "name": "k3s",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:key-pair/chaos-dr-dr-key",
+            "fingerprint": "f0:b9:0f:24:ec:53:d6:f5:5e:23:e4:88:86:93:e8:bd",
+            "id": "chaos-dr-dr-key",
+            "key_name": "chaos-dr-dr-key",
+            "key_name_prefix": "",
+            "key_pair_id": "key-0396acb22c3cf4994",
+            "key_type": "rsa",
+            "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCg41MIfAdT0l8okLDhLkSsJ1x9AsDf4eKGWsElXUtL7Pl49cg1y4YtxX/sbMs21foZEJ/tWwjzYPf//ODsAxRer5vAvjk8T2N4zFONa6WDNbLVouJPn5biZ3TGb12qJ123Yvs7WiJzDWftb2yHoVGtltVqDzOsqWvLSaW8CulGj9wamTdTrr64ldjJcdfxeb9g4K2u6vCqruyrFZuC6rM8KlBWtmPL0CYFfj3k8TQVjbUUxodOoYY3TMFVWKHki+wI7zgYnaG92GB9uLNplgu5YRgBsf0h03gzewhEnEsJ0LBtrA3grFIbJ0kXfNmwrT83eBisgB8QPXoa1gq/iZaeCjB0LihaAD8bp2UBdlCH99IGJpIXNH6hhOmK5LCcyPg+sq7Ugs8ubMr6Buz1vZ0pJFX+96cKzHdgtl1CMiKpQnWdqHkilX1wTj7qNyaV/AI0y86K8h51ItcCBxAvG5fNMhd9+da3kbW+P36sVM6nQbXeijbOZcEmFvoDlhvpYn4VklCqOGPAK+KtTIrJ8OlNHiAne5/T5npCrlq/o8/AzD8XCYPv+uHTKYOo6dpFMShTg5oOAJvGxAyhpJfQn2o0HU6lx3kG5sqmTE0yVIDpmNHC412ZqYJBieynWoIHLSk9t5sA+JDjsEo23GLprO4ZxKo8V2gxsygScgdGnoS1JQ== shivamkumarbxr8@gmail.com",
+            "tags": null,
+            "tags_all": {}
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ=="
+        }
+      ]
+    },
+    {
+      "module": "module.k3s",
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "k3s",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:security-group/sg-0e1da74af988646f6",
+            "description": "K3s node traffic",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-0e1da74af988646f6",
+            "ingress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 22,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 22
+              },
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 30000,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 32767
+              },
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 443,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 443
+              },
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 80,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 80
+              },
+              {
+                "cidr_blocks": [
+                  "10.0.0.0/8"
+                ],
+                "description": "",
+                "from_port": 9090,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 9090
+              }
+            ],
+            "name": "chaos-dr-dr-k3s-sg",
+            "name_prefix": "",
+            "owner_id": "318827119970",
+            "revoke_rules_on_delete": false,
+            "tags": {
+              "Name": "chaos-dr-dr-k3s-sg",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-k3s-sg",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "module.vpc.aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.rds_replica",
+      "mode": "managed",
+      "type": "aws_db_subnet_group",
+      "name": "replica",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:rds:us-west-2:318827119970:subgrp:chaos-dr-dr-replica-subnet-group",
+            "description": "Managed by Terraform",
+            "id": "chaos-dr-dr-replica-subnet-group",
+            "name": "chaos-dr-dr-replica-subnet-group",
+            "name_prefix": "",
+            "subnet_ids": [
+              "subnet-0fbe8da5885c62b60",
+              "subnet-0ff0d413b09dd724b"
+            ],
+            "supported_network_types": [
+              "IPV4"
+            ],
+            "tags": {
+              "Name": "chaos-dr-dr-replica-subnet-group",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-replica-subnet-group",
+              "Project": "chaos-dr"
+            },
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.vpc.aws_subnet.private",
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.rds_replica",
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "rds_replica",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:security-group/sg-0c092a06b74671e4f",
+            "description": "Allow PostgreSQL from K3s DR node only",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-0c092a06b74671e4f",
+            "ingress": [
+              {
+                "cidr_blocks": [],
+                "description": "",
+                "from_port": 5432,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [
+                  "sg-0e1da74af988646f6"
+                ],
+                "self": false,
+                "to_port": 5432
+              }
+            ],
+            "name": "chaos-dr-dr-rds-replica-sg",
+            "name_prefix": "",
+            "owner_id": "318827119970",
+            "revoke_rules_on_delete": false,
+            "tags": {
+              "Name": "chaos-dr-dr-rds-replica-sg",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-rds-replica-sg",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "module.k3s.aws_security_group.k3s",
+            "module.vpc.aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "data",
+      "type": "aws_availability_zones",
+      "name": "available",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "all_availability_zones": null,
+            "exclude_names": null,
+            "exclude_zone_ids": null,
+            "filter": null,
+            "group_names": [
+              "us-west-2-zg-1"
+            ],
+            "id": "us-west-2",
+            "names": [
+              "us-west-2a",
+              "us-west-2b",
+              "us-west-2c",
+              "us-west-2d"
+            ],
+            "state": "available",
+            "timeouts": null,
+            "zone_ids": [
+              "usw2-az2",
+              "usw2-az1",
+              "usw2-az3",
+              "usw2-az4"
+            ]
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_internet_gateway",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:internet-gateway/igw-08a2ecc26314b868e",
+            "id": "igw-08a2ecc26314b868e",
+            "owner_id": "318827119970",
+            "tags": {
+              "Name": "chaos-dr-dr-igw",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-igw",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.vpc.aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_route_table",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:route-table/rtb-0950b6896a4837922",
+            "id": "rtb-0950b6896a4837922",
+            "owner_id": "318827119970",
+            "propagating_vgws": [],
+            "route": [
+              {
+                "carrier_gateway_id": "",
+                "cidr_block": "0.0.0.0/0",
+                "core_network_arn": "",
+                "destination_prefix_list_id": "",
+                "egress_only_gateway_id": "",
+                "gateway_id": "igw-08a2ecc26314b868e",
+                "ipv6_cidr_block": "",
+                "local_gateway_id": "",
+                "nat_gateway_id": "",
+                "network_interface_id": "",
+                "transit_gateway_id": "",
+                "vpc_endpoint_id": "",
+                "vpc_peering_connection_id": ""
+              }
+            ],
+            "tags": {
+              "Name": "chaos-dr-dr-public-rt",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-public-rt",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.vpc.aws_internet_gateway.main",
+            "module.vpc.aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_route_table_association",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-07d43fe4e56e18e91",
+            "route_table_id": "rtb-0950b6896a4837922",
+            "subnet_id": "subnet-0ce01d875b0f261fa",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.vpc.aws_internet_gateway.main",
+            "module.vpc.aws_route_table.public",
+            "module.vpc.aws_subnet.public",
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-0da34980082701a08",
+            "route_table_id": "rtb-0950b6896a4837922",
+            "subnet_id": "subnet-069ed987d645b5d91",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.vpc.aws_internet_gateway.main",
+            "module.vpc.aws_route_table.public",
+            "module.vpc.aws_subnet.public",
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "private",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:subnet/subnet-0ff0d413b09dd724b",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "us-west-2a",
+            "availability_zone_id": "usw2-az2",
+            "cidr_block": "10.1.10.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0ff0d413b09dd724b",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "318827119970",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "chaos-dr-dr-private-1",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-private-1",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:subnet/subnet-0fbe8da5885c62b60",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "us-west-2b",
+            "availability_zone_id": "usw2-az1",
+            "cidr_block": "10.1.11.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0fbe8da5885c62b60",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "318827119970",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "chaos-dr-dr-private-2",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-private-2",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:subnet/subnet-0ce01d875b0f261fa",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "us-west-2a",
+            "availability_zone_id": "usw2-az2",
+            "cidr_block": "10.1.0.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0ce01d875b0f261fa",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": true,
+            "outpost_arn": "",
+            "owner_id": "318827119970",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "chaos-dr-dr-public-1",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-public-1",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:subnet/subnet-069ed987d645b5d91",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "us-west-2b",
+            "availability_zone_id": "usw2-az1",
+            "cidr_block": "10.1.1.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-069ed987d645b5d91",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": true,
+            "outpost_arn": "",
+            "owner_id": "318827119970",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "chaos-dr-dr-public-2",
+              "Project": "chaos-dr"
+            },
+            "tags_all": {
+              "Name": "chaos-dr-dr-public-2",
+              "Project": "chaos-dr"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04910bcba1a3781fd"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "module.vpc.aws_vpc.main",
+            "module.vpc.data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vpc",
+      "mode": "managed",
+      "type": "aws_vpc",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-west-2:318827119970:vpc/vpc-04910bcba1a3781fd",
+            "assign_generated_ipv6_cidr_block": false,
+            "cidr_block": "10.1.0.0/16",
+            "default_network_acl_id": "acl-0b5d66a031d49a90a",
+            "default_route_table_id": "rtb-03e55088cfbc56468",
+            "default_security_group_id": "sg-061e41329c4af4072",
+            "dhcp_options_id": "dopt-007f208e22f80e31b",
+            "enable_dns_hostnames": true,
+            "enable_dns_support": true,
+            "enable_network_address_usage_metrics": false,
+            "id": "vpc-04910bcba1a3781fd",
+            "instance_tenancy": "default",
+            "ipv4_ipam_pool_id": null,
+            "ipv4_netmask_length": null,
+            "ipv6_association_id": "",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_network_border_group": "",
+            "ipv6_ipam_pool_id": "",
+            "ipv6_netmask_length": 0,
+            "main_route_table_id": "rtb-03e55088cfbc56468",
+            "owner_id": "318827119970",
+            "tags": {
+              "ManagedBy": "terraform",
+              "Name": "chaos-dr-dr-vpc",
+              "Project": "chaos-dr",
+              "Region": "dr"
+            },
+            "tags_all": {
+              "ManagedBy": "terraform",
+              "Name": "chaos-dr-dr-vpc",
+              "Project": "chaos-dr",
+              "Region": "dr"
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

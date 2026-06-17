@@ -1,0 +1,9 @@
+# Fill after region-primary is applied first
+# primary_db_instance_arn comes from: cd terraform/region-primary && terraform output
+
+project                 = "chaos-dr"
+aws_region              = "us-west-2"
+db_password             = "CHANGE_ME_same_as_primary"
+ssh_public_key          = "ssh-rsa AAAA... same key as primary"
+app_image               = "your-dockerhub-username/chaos-dr-app:latest"
+primary_db_instance_arn = "arn:aws:rds:us-east-1:ACCOUNT_ID:db:chaos-dr-primary-postgres"

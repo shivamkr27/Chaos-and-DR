@@ -1,0 +1,45 @@
+# Service account + RBAC that chaos experiments run as.
+# LitmusChaos needs permission to delete pods, exec into them, etc.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-runner
+  namespace: chaos-dr
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: chaos-runner-role
+  namespace: chaos-dr
+rules:
+  # Pod-level chaos needs these
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "pods/log", "events", "configmaps", "secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+  # Deployment-level for restart/scale
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  # Jobs (chaos runner creates a Job per experiment)
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+  # Litmus CRDs
+  - apiGroups: ["litmuschaos.io"]
+    resources: ["chaosengines", "chaosexperiments", "chaosresults"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: chaos-runner-binding
+  namespace: chaos-dr
+subjects:
+  - kind: ServiceAccount
+    name: chaos-runner
+    namespace: chaos-dr
+roleRef:
+  kind: Role
+  name: chaos-runner-role
+  apiGroup: rbac.authorization.k8s.io
