@@ -1,0 +1,193 @@
+{
+  "title": "DR Failover",
+  "uid": "chaos-dr-failover",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "name": "Failover Events",
+        "datasource": { "type": "prometheus" },
+        "expr": "ALERTS{alertname='HighErrorRate', severity='critical'}",
+        "titleFormat": "FAILOVER TRIGGERED",
+        "iconColor": "dark-red",
+        "enable": true
+      },
+      {
+        "name": "Primary Recovery",
+        "datasource": { "type": "prometheus" },
+        "expr": "ALERTS{alertname='AppDown', alertstate='resolved'}",
+        "titleFormat": "Primary Recovered",
+        "iconColor": "green",
+        "enable": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Active Region",
+      "description": "Which region is currently serving traffic",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      },
+      "targets": [{
+        "expr": "label_replace(up{job='chaos-dr-app'}, 'region', '$1', 'instance', '.*:(.*)')",
+        "legendFormat": "{{region}}"
+      }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Replication Lag",
+      "description": "How far behind DR database is from primary. SLO: < 5 seconds",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red",    "value": 5 }
+          ]
+        },
+        "unit": "s"
+      },
+      "targets": [{
+        "expr": "pg_replication_lag_seconds",
+        "legendFormat": "Lag"
+      }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Route53 Health — Primary",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "green", "value": 1 }
+          ]
+        },
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "UNHEALTHY" }, "1": { "text": "HEALTHY" } } }
+        ]
+      },
+      "targets": [{
+        "expr": "aws_route53_health_check_status_minimum{region='us-east-1'}",
+        "legendFormat": "Primary"
+      }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Route53 Health — DR",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "green", "value": 1 }
+          ]
+        },
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "UNHEALTHY" }, "1": { "text": "HEALTHY" } } }
+        ]
+      },
+      "targets": [{
+        "expr": "aws_route53_health_check_status_minimum{region='us-west-2'}",
+        "legendFormat": "DR"
+      }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Replication Lag Over Time (SLO: RPO < 5s)",
+      "description": "Spikes here = data at risk if primary fails. Should be near 0 at rest.",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "pg_replication_lag_seconds",
+          "legendFormat": "Replication Lag"
+        },
+        {
+          "expr": "vector(5)",
+          "legendFormat": "SLO Threshold (5s)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Request Success Rate — Primary vs DR (RTO: < 2min)",
+      "description": "During region-failure experiment: primary drops to 0, DR takes over. Gap = RTO.",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": { "lineWidth": 2 },
+          "min": 0,
+          "max": 1
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~'2..', region='us-east-1'}[1m])) / sum(rate(http_requests_total{region='us-east-1'}[1m]))",
+          "legendFormat": "Primary (us-east-1)"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{status=~'2..', region='us-west-2'}[1m])) / sum(rate(http_requests_total{region='us-west-2'}[1m]))",
+          "legendFormat": "DR (us-west-2)"
+        },
+        {
+          "expr": "vector(0.995)",
+          "legendFormat": "SLO (99.5%)"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "EC2 Instance Status (1=running, 0=stopped)",
+      "description": "During region-failure experiment: primary drops to 0. Watch time until DR takes full load.",
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2 },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "STOPPED" }, "1": { "text": "RUNNING" } } }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "aws_ec2_instance_status_check_failed_system_maximum{region='us-east-1'} == 0",
+          "legendFormat": "Primary EC2 healthy"
+        },
+        {
+          "expr": "aws_ec2_instance_status_check_failed_system_maximum{region='us-west-2'} == 0",
+          "legendFormat": "DR EC2 healthy"
+        }
+      ]
+    }
+  ]
+}

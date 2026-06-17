@@ -1,0 +1,29 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS credentials — never commit
+.aws/
+
+# Logs
+logs/
+*.log
+
+# Docker
+*.env

@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: PLACEHOLDER_IMAGE
+    newName: shivam272727/chaos-dr-app
+    newTag: latest
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: chaos-dr-app
+        namespace: chaos-dr
+      spec:
+        template:
+          spec:
+            containers:
+              - name: app
+                env:
+                  - name: AWS_REGION
+                    value: us-west-2
+                readinessProbe:
+                  httpGet:
+                    path: /health/live
+                    port: 3000
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+                  failureThreshold: 2
+    target:
+      kind: Deployment
+      name: chaos-dr-app

@@ -1,0 +1,211 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "name": "Chaos Events",
+        "datasource": { "type": "prometheus" },
+        "expr": "ALERTS{alertname='ChaosExperimentActive'}",
+        "step": "60s",
+        "titleFormat": "Chaos: {{job_name}}",
+        "iconColor": "red",
+        "enable": true,
+        "hide": false
+      }
+    ]
+  },
+  "title": "System Overview",
+  "uid": "chaos-dr-overview",
+  "schemaVersion": 38,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "HTTP Success Rate",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "yellow","value": 0.99 },
+            { "color": "green", "value": 0.995 }
+          ]
+        },
+        "unit": "percentunit"
+      },
+      "targets": [{
+        "expr": "job:http_request_success_rate:rate5m",
+        "legendFormat": "Success Rate"
+      }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "P99 Latency",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red",    "value": 2 }
+          ]
+        },
+        "unit": "s"
+      },
+      "targets": [{
+        "expr": "job:http_request_duration_p99:rate5m",
+        "legendFormat": "P99"
+      }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "App Pods Ready",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "yellow","value": 1 },
+            { "color": "green", "value": 3 }
+          ]
+        }
+      },
+      "targets": [{
+        "expr": "count(kube_pod_status_ready{namespace='chaos-dr', condition='true'})",
+        "legendFormat": "Ready Pods"
+      }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active Chaos Experiments",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 1 }
+          ]
+        }
+      },
+      "targets": [{
+        "expr": "sum(kube_job_status_active{namespace='chaos-dr', job_name=~'chaos-.*'}) or vector(0)",
+        "legendFormat": "Active"
+      }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Request Rate (req/s)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~'2..'}[1m]))",
+          "legendFormat": "2xx (success)"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{status=~'5..'}[1m]))",
+          "legendFormat": "5xx (errors)"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{status=~'4..'}[1m]))",
+          "legendFormat": "4xx (client errors)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Response Time Percentiles",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))",
+          "legendFormat": "P99"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Pod Count vs Desired",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_available_replicas{namespace='chaos-dr'}",
+          "legendFormat": "Available"
+        },
+        {
+          "expr": "kube_deployment_spec_replicas{namespace='chaos-dr'}",
+          "legendFormat": "Desired"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace='chaos-dr'}",
+          "legendFormat": "HPA Current"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "DB Connection Pool",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "expr": "db_pool_total_connections",
+          "legendFormat": "Total"
+        },
+        {
+          "expr": "db_pool_idle_connections",
+          "legendFormat": "Idle"
+        },
+        {
+          "expr": "db_pool_waiting_count",
+          "legendFormat": "Waiting"
+        }
+      ]
+    }
+  ]
+}

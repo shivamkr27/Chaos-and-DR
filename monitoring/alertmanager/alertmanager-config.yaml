@@ -1,0 +1,78 @@
+# Alertmanager config — routes Prometheus alerts to Slack.
+# Store this as a K8s secret (not plaintext) after filling webhook URL:
+#
+#   kubectl create secret generic alertmanager-config \
+#     --from-file=alertmanager.yaml=monitoring/alertmanager/alertmanager-config.yaml \
+#     --namespace monitoring
+---
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ["alertname", "slo"]
+  group_wait: 10s          # wait 10s before first alert (batch related alerts)
+  group_interval: 1m       # min time between alert group updates
+  repeat_interval: 4h      # re-notify if still firing after 4 hours
+
+  receiver: "slack-default"
+
+  routes:
+    # Critical SLO breaches get their own channel and fire immediately
+    - matchers:
+        - severity="critical"
+      receiver: "slack-critical"
+      group_wait: 0s
+      continue: false
+
+    # Chaos info alerts go to a separate channel (noisy but informational)
+    - matchers:
+        - severity="info"
+      receiver: "slack-chaos"
+      continue: false
+
+receivers:
+  - name: "slack-default"
+    slack_configs:
+      - api_url: "YOUR_SLACK_WEBHOOK_URL"   # replace with real webhook
+        channel: "#chaos-dr-alerts"
+        username: "Prometheus"
+        icon_emoji: ":bell:"
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+        text: |
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *SLO:* {{ .CommonLabels.slo }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Severity:* {{ .CommonLabels.severity }}
+
+  - name: "slack-critical"
+    slack_configs:
+      - api_url: "YOUR_SLACK_WEBHOOK_URL"
+        channel: "#chaos-dr-critical"
+        username: "Prometheus CRITICAL"
+        icon_emoji: ":rotating_light:"
+        send_resolved: true
+        title: ':rotating_light: [CRITICAL] {{ .CommonAnnotations.summary }}'
+        text: |
+          *SLO Breached:* {{ .CommonLabels.slo }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Time:* {{ .CommonAnnotations.startsAt }}
+
+  - name: "slack-chaos"
+    slack_configs:
+      - api_url: "YOUR_SLACK_WEBHOOK_URL"
+        channel: "#chaos-dr-experiments"
+        username: "Chaos Observer"
+        icon_emoji: ":fire:"
+        send_resolved: true
+        title: ':fire: Chaos Experiment: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+inhibit_rules:
+  # If AppDown fires (all pods dead), suppress lower-severity alerts —
+  # everything will be broken; no need for 10 alerts at once.
+  - source_matchers:
+      - alertname="AppDown"
+    target_matchers:
+      - severity=~"warning|info"
+    equal: ["namespace"]

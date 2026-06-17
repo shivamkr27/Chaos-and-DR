@@ -1,0 +1,160 @@
+{
+  "title": "Chaos Events",
+  "uid": "chaos-dr-chaos",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-3h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "name": "Chaos Start/End",
+        "datasource": { "type": "prometheus" },
+        "expr": "changes(kube_job_status_active{namespace='chaos-dr', job_name=~'chaos-.*'}[1m]) > 0",
+        "titleFormat": "Chaos: {{job_name}}",
+        "iconColor": "red",
+        "enable": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Error Rate During Chaos (SLO: < 5%)",
+      "description": "Red line at 5% = SLO threshold. Should stay below during pod-delete and network-latency experiments.",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": { "lineWidth": 2 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red",   "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "1 - job:http_request_success_rate:rate5m",
+          "legendFormat": "Error Rate"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Pod Restarts (chaos-dr namespace)",
+      "description": "Each spike = a pod killed by chaos. Recovery time = gap between spike and return to 0.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2, "drawStyle": "bars" } } },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace='chaos-dr'}[1m])",
+          "legendFormat": "{{pod}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Pod Ready Count (SLO: recovery < 30s)",
+      "description": "When a pod is killed, count drops. Time to return to 3 = recovery time. Should be < 30s.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green",  "value": 3 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_ready{namespace='chaos-dr', condition='true'})",
+          "legendFormat": "Ready Pods"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "P99 Latency During Network Chaos (SLO: < 2s)",
+      "description": "During network-latency experiment (300ms injected), P99 should still stay under 2s.",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "job:http_request_duration_p99:rate5m",
+          "legendFormat": "P99 Latency"
+        },
+        {
+          "expr": "vector(2)",
+          "legendFormat": "SLO Threshold (2s)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "HPA Replicas During CPU Stress (SLO: scale-up < 90s)",
+      "description": "During cpu-stress experiment, replica count should increase from 3 within 90 seconds.",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace='chaos-dr', horizontalpodautoscaler='chaos-dr-app'}",
+          "legendFormat": "Current Replicas"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace='chaos-dr', horizontalpodautoscaler='chaos-dr-app'}",
+          "legendFormat": "Min Replicas"
+        },
+        {
+          "expr": "avg(rate(container_cpu_usage_seconds_total{namespace='chaos-dr', container='app'}[1m])) / 0.001 * 100",
+          "legendFormat": "CPU % of limit"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Chaos Experiment Results",
+      "description": "Latest result from each ChaosEngine — Pass/Fail/Awaited",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 6 },
+      "targets": [
+        {
+          "expr": "litmuschaos_experiment_verdict",
+          "legendFormat": "{{chaosengine_name}} | {{chaosexperiment_name}} | {{chaosresult_verdict}}",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "chaosengine_name": "Engine",
+              "chaosexperiment_name": "Experiment",
+              "chaosresult_verdict": "Verdict"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
