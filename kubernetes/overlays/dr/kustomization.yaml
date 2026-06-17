@@ -17,6 +17,7 @@ patches:
         name: chaos-dr-app
         namespace: chaos-dr
       spec:
+        replicas: 1
         template:
           spec:
             containers:
