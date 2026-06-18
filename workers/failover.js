@@ -1,7 +1,3 @@
-// Cloudflare Worker — multi-region failover
-// Primary: us-east-1 (100.56.48.174)  DR: us-west-2 (35.162.14.199)
-// nip.io converts IPs to valid hostnames so Cloudflare Workers can fetch them
-
 const PRIMARY      = "http://100-56-48-174.nip.io:30080";
 const DR           = "http://35-162-14-199.nip.io:30080";
 const HEALTH_PATH  = "/health/live";
@@ -20,15 +16,40 @@ async function probe(base) {
   }
 }
 
+async function sendFailoverAlert(env, path) {
+  if (!env.LAMBDA_URL || !env.ALERT_SECRET) return;
+  try {
+    await fetch(env.LAMBDA_URL, {
+      method:  "POST",
+      headers: {
+        "Content-Type":   "application/json",
+        "x-alert-secret": env.ALERT_SECRET,
+      },
+      body: JSON.stringify({ 
+        path, 
+        timestamp: Date.now(),
+        region: "us-west-2",
+        primaryUp: false
+      }),
+    });
+  } catch (_) {
+    // alert failure must never block traffic routing
+  }
+}
+
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     const primaryUp = await probe(PRIMARY);
     const backend   = primaryUp ? PRIMARY : DR;
     const region    = primaryUp ? "us-east-1" : "us-west-2";
 
-    // Forward the original request to the chosen backend
-    const url     = new URL(request.url);
-    const target  = backend + url.pathname + url.search;
+    if (!primaryUp) {
+      const url = new URL(request.url);
+      ctx.waitUntil(sendFailoverAlert(env, url.pathname));
+    }
+
+    const url    = new URL(request.url);
+    const target = backend + url.pathname + url.search;
 
     let resp;
     try {
@@ -42,7 +63,6 @@ export default {
       return new Response(`Failover error: ${err.message}`, { status: 502 });
     }
 
-    // Rebuild response so we can add custom headers
     const headers = new Headers(resp.headers);
     headers.set("X-Served-By",       region);
     headers.set("X-Failover-Active", primaryUp ? "false" : "true");
