@@ -83,15 +83,24 @@ def worker_check():
     except Exception:
         return None, None, None
 
+_ON_EC2 = os.path.exists("/etc/rancher/k3s/k3s.yaml")
+
 def ssh(cmd, box):
-    """Run kubectl command on primary EC2, stream each line to box."""
+    """Run kubectl on EC2 — directly if running on the node, via SSH otherwise."""
+    if _ON_EC2:
+        full_cmd = f"export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && {cmd}"
+        shell_args = ["bash", "-c", full_cmd]
+    else:
+        shell_args = [
+            "ssh", "-i", SSH_KEY,
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "BatchMode=yes",
+            "-o", "ConnectTimeout=12",
+            f"ec2-user@{PRIMARY_IP}",
+            f"export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && {cmd}",
+        ]
     proc = subprocess.Popen(
-        ["ssh", "-i", SSH_KEY,
-         "-o", "StrictHostKeyChecking=no",
-         "-o", "BatchMode=yes",
-         "-o", "ConnectTimeout=12",
-         f"ec2-user@{PRIMARY_IP}",
-         f"export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && {cmd}"],
+        shell_args,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
     )
     for line in iter(proc.stdout.readline, ""):
