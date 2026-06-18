@@ -1,15 +1,17 @@
-# Chaos Engineering + Multi-Region Disaster Recovery
+# 💥 Chaos Engineering + Multi-Region Disaster Recovery
 
-A production-style resilience platform spanning two AWS regions.
-The system **deliberately breaks itself** and proves it recovers automatically.
+A production-style resilience platform across two AWS regions that **deliberately breaks itself** and proves it recovers automatically.
 
-> **Note:** The live endpoints listed below are the author's personal deployment.
-> To run your own, see [Deploy Your Own](#deploy-your-own) — you need your own AWS account.
-> Forking this repo and running `terraform apply` will create resources **in your own AWS account**, not the author's.
+> This is my (shivamkr27) personal project — infra is usually off to avoid AWS costs 😅
+> The dashboard and Cloudflare Worker are always live though.
+> If you fork this and run `terraform apply`, it spins up **your own** AWS infra, not mine.
+
+🔗 **Dashboard:** https://shivamkr27.github.io/Chaos-and-DR  
+🌐 **Worker:** https://chaos-dr-failove.shivamkumarbxr8.workers.dev
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
                      ┌──────────────────────────────────┐
@@ -37,12 +39,12 @@ The system **deliberately breaks itself** and proves it recovers automatically.
                └─────────────────┘
 ```
 
-**Active-passive:** Primary serves all traffic. Worker checks health per-request.
-On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
+**Active-passive:** Primary serves all traffic. Worker health-probes per request.
+On failure → Worker routes to DR instantly. No DNS change, no TTL wait.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Tool | Why |
 |---|---|---|
@@ -60,7 +62,7 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 
 ---
 
-## SLOs (Proven Live)
+## 📊 SLOs (Proven Live)
 
 | SLO | Target | Actual |
 |---|---|---|
@@ -71,7 +73,7 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
@@ -106,28 +108,12 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 │   ├── lambda-alert/index.js     # Lambda: receives Worker call → publishes SNS email
 │   └── failover.sh               # Manual DR runbook (5 steps)
 └── .github/workflows/
-    └── deploy.yml                # CI/CD: test → build → push → deploy
+    └── deploy.yml                # CI/CD: test → build → push → deploy (manual trigger)
 ```
 
 ---
 
-## Live Demo (Author's Deployment)
-
-> These IPs belong to the author's AWS account. Do not run stop/start commands against them.
-> To test, use the Cloudflare Worker URL only.
-
-| Endpoint | URL |
-|---|---|
-| Cloudflare Worker | https://chaos-dr-failove.shivamkumarbxr8.workers.dev |
-| Dashboard | https://shivamkr27.github.io/Chaos-and-DR |
-| Primary App | http://100.56.48.174:30080 (author's deployment — may be down) |
-| Primary Grafana | http://100.56.48.174:32000 (admin/admin) |
-| Primary Prometheus | http://100.56.48.174:32001 |
-| DR App | http://35.162.14.199:30080 |
-
----
-
-## Deploy Your Own
+## 🚀 Deploy Your Own
 
 ### Prerequisites
 - AWS account + credentials (`aws configure`)
@@ -138,7 +124,6 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 ### 1 — Terraform tfvars
 
 ```bash
-# terraform/region-primary/terraform.tfvars
 cp terraform/region-primary/terraform.tfvars.example terraform/region-primary/terraform.tfvars
 # fill in: ssh_public_key, db_password, app_image, aws_region
 ```
@@ -146,15 +131,11 @@ cp terraform/region-primary/terraform.tfvars.example terraform/region-primary/te
 ### 2 — Deploy Infrastructure
 
 ```bash
-cd terraform/region-primary
-terraform init && terraform apply
-
-cd terraform/region-dr
-terraform init && terraform apply
+cd terraform/region-primary && terraform init && terraform apply
+cd terraform/region-dr      && terraform init && terraform apply
 ```
 
-Note the output IPs. Update these files with your new IPs:
-- `workers/failover.js` — PRIMARY and DR constants
+Note the output IPs. Update `workers/failover.js` — PRIMARY and DR constants with new nip.io URLs.
 
 ### 3 — Deploy App to Both Clusters
 
@@ -162,12 +143,10 @@ Note the output IPs. Update these files with your new IPs:
 PRIMARY_IP=<your-primary-ip>
 DR_IP=<your-dr-ip>
 
-# Primary
 kubectl kustomize kubernetes/overlays/primary | \
   ssh -i ~/.ssh/chaos-dr ec2-user@$PRIMARY_IP \
   "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f -"
 
-# DR
 kubectl kustomize kubernetes/overlays/dr | \
   ssh -i ~/.ssh/chaos-dr ec2-user@$DR_IP \
   "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f -"
@@ -187,13 +166,12 @@ done
 ### 5 — Deploy Cloudflare Worker
 
 ```bash
-cd workers
-CLOUDFLARE_API_TOKEN=<token> npx wrangler deploy
+cd workers && CLOUDFLARE_API_TOKEN=<token> npx wrangler deploy
 ```
 
 ### 6 — GitHub Actions Secrets
 
-Add these in repo Settings → Secrets:
+Repo Settings → Secrets → Actions:
 
 | Secret | Value |
 |---|---|
@@ -202,43 +180,60 @@ Add these in repo Settings → Secrets:
 | `EC2_SSH_KEY` | content of `~/.ssh/chaos-dr` private key |
 | `EC2_HOST` | your primary EC2 IP |
 
+Then trigger deploy manually: Actions → CI/CD → Run workflow.
+
 ---
 
-## Chaos Experiments
+## 🔬 Chaos Experiments
 
-Run from the Chaos Lab tab in `dashboard/index.html`, or CLI with your own IPs:
+Open `docs/index.html` (or the GitHub Pages link above) → Chaos Lab tab for the interactive version, or run directly:
 
 ```bash
 PRIMARY_IP=<your-primary-ip>
 
-# 1. Pod Delete — proves 17s recovery
+# Pod Delete — proves 17s recovery
 ssh -i ~/.ssh/chaos-dr ec2-user@$PRIMARY_IP \
   "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl delete pod -n chaos-dr \
   \$(kubectl get pods -n chaos-dr -l app=chaos-dr-app -o jsonpath='{.items[0].metadata.name}') \
   --grace-period=0"
 
-# 2. Network Latency — 300ms via tc/netem
+# Network Latency — 300ms via tc/netem
 ssh -i ~/.ssh/chaos-dr ec2-user@$PRIMARY_IP "sudo tc qdisc add dev eth0 root netem delay 300ms"
-# restore:
-ssh -i ~/.ssh/chaos-dr ec2-user@$PRIMARY_IP "sudo tc qdisc del dev eth0 root"
+ssh -i ~/.ssh/chaos-dr ec2-user@$PRIMARY_IP "sudo tc qdisc del dev eth0 root"  # restore
 
-# 3. Region Failure — stop primary, Worker auto-routes to DR
-aws ec2 stop-instances --region us-east-1 --instance-ids <your-primary-instance-id>
-curl -sI https://<your-worker-url>/health/live
-# Expected: X-Served-By: us-west-2, X-Failover-Active: true
-# Restore:
-aws ec2 start-instances --region us-east-1 --instance-ids <your-primary-instance-id>
+# Region Failure — Worker auto-routes to DR in <5s
+aws ec2 stop-instances --region us-east-1 --instance-ids <your-instance-id>
+curl -sI https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live
+# expect: X-Served-By: us-west-2, X-Failover-Active: true
+aws ec2 start-instances --region us-east-1 --instance-ids <your-instance-id>  # restore
 ```
 
 ---
 
-## Teardown (Zero Cost)
+## ♻️ Teardown (Zero Cost)
 
 ```bash
 cd terraform/region-dr      && terraform destroy -auto-approve
 cd terraform/region-primary && terraform destroy -auto-approve
 ```
 
-This terminates EC2, releases EIPs, deletes RDS, removes VPCs.
-Cloudflare Worker stays deployed (free tier, $0).
-GitHub Actions has no cost when not running.
+Terminates EC2, releases EIPs, deletes RDS. Cloudflare Worker + GitHub Pages stay live (both free).
+
+---
+
+## 🔁 Restart Guide (for when I bring it back up)
+
+> New `terraform apply` gives **new IPs** every time since EIPs are released on destroy.
+
+```
+1. terraform apply (primary) → note PRIMARY_IP
+2. terraform apply (dr)      → note DR_IP
+3. Update workers/failover.js  PRIMARY = "http://<PRIMARY_IP>.nip.io:30080"
+                               DR      = "http://<DR_IP>.nip.io:30080"
+4. cd workers && npx wrangler deploy
+5. GitHub → Settings → Secrets → EC2_HOST = <new PRIMARY_IP>
+6. kubectl apply (steps 3+4 above) on both clusters
+7. GitHub Actions → Run workflow  (manual deploy trigger)
+```
+
+Dashboard and Cloudflare Worker URL never change — always live regardless.
