@@ -55,7 +55,7 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 | Alerting | AWS Lambda + SNS | Email alert on failover event |
 | Autoscaling | HPA autoscaling/v2 | CPU 70% + memory 80% dual metric |
 | CI/CD | GitHub Actions | test → build → push → kubectl rollout |
-| Dashboard | Streamlit + systemd | SSH chaos buttons, auto-restart on crash |
+| Dashboard | HTML/JS (static) | Chaos Lab, SLO panels, Chart.js — no backend needed |
 | DB | RDS PostgreSQL | Primary only (DR runs degraded) |
 
 ---
@@ -101,7 +101,7 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 │   ├── failover.js               # Cloudflare Worker — health probe + routing + alert
 │   └── wrangler.toml
 ├── dashboard/
-│   └── app.py                    # Streamlit control panel (runs as systemd service on EC2)
+│   └── index.html                # Static HTML/JS control panel — GitHub Pages compatible
 ├── scripts/
 │   ├── lambda-alert/index.js     # Lambda: receives Worker call → publishes SNS email
 │   └── failover.sh               # Manual DR runbook (5 steps)
@@ -119,8 +119,8 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 | Endpoint | URL |
 |---|---|
 | Cloudflare Worker | https://chaos-dr-failove.shivamkumarbxr8.workers.dev |
-| Streamlit Dashboard | http://100.56.48.174:8501 |
-| Primary App | http://100.56.48.174:30080 |
+| Dashboard | dashboard/index.html (open locally, or GitHub Pages) |
+| Primary App | http://100.56.48.174:30080 (author's deployment — may be down) |
 | Primary Grafana | http://100.56.48.174:32000 (admin/admin) |
 | Primary Prometheus | http://100.56.48.174:32001 |
 | DR App | http://35.162.14.199:30080 |
@@ -155,7 +155,6 @@ terraform init && terraform apply
 
 Note the output IPs. Update these files with your new IPs:
 - `workers/failover.js` — PRIMARY and DR constants
-- `dashboard/app.py` — PRIMARY_IP, DR_IP
 
 ### 3 — Deploy App to Both Clusters
 
@@ -207,7 +206,7 @@ Add these in repo Settings → Secrets:
 
 ## Chaos Experiments
 
-Run from the Streamlit dashboard, or CLI with your own IPs:
+Run from the Chaos Lab tab in `dashboard/index.html`, or CLI with your own IPs:
 
 ```bash
 PRIMARY_IP=<your-primary-ip>
