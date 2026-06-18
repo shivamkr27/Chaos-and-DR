@@ -1,3 +1,10 @@
 name = "chaos-dr-failove"
 main = "failover.js"
 compatibility_date = "2024-01-01"
+
+# Set these as Worker secrets via Cloudflare dashboard → Workers → Settings → Variables
+# LAMBDA_URL  = "https://<id>.lambda-url.us-east-1.on.aws/"
+# ALERT_SECRET = "<random-string>"
+[vars]
+LAMBDA_URL   = "https://2jppbsn7aihb4o6epu2hhbptvi0ppinf.lambda-url.us-east-1.on.aws/"
+ALERT_SECRET ="chaos-dr-secret-2024"
