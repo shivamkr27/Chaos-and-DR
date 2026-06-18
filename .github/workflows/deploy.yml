@@ -62,6 +62,7 @@ jobs:
     name: Deploy to Primary (us-east-1)
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Rolling deploy on primary EC2
         uses: appleboy/ssh-action@v1.0.3
