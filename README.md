@@ -100,8 +100,8 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 ├── workers/
 │   ├── failover.js               # Cloudflare Worker — health probe + routing + alert
 │   └── wrangler.toml
-├── dashboard/
-│   └── index.html                # Static HTML/JS control panel — GitHub Pages compatible
+├── docs/
+│   └── index.html                # Static HTML/JS dashboard — served via GitHub Pages
 ├── scripts/
 │   ├── lambda-alert/index.js     # Lambda: receives Worker call → publishes SNS email
 │   └── failover.sh               # Manual DR runbook (5 steps)
@@ -119,7 +119,7 @@ On failure: Worker routes to DR instantly — no DNS change, no TTL wait.
 | Endpoint | URL |
 |---|---|
 | Cloudflare Worker | https://chaos-dr-failove.shivamkumarbxr8.workers.dev |
-| Dashboard | dashboard/index.html (open locally, or GitHub Pages) |
+| Dashboard | https://shivamkr27.github.io/Chaos-and-DR |
 | Primary App | http://100.56.48.174:30080 (author's deployment — may be down) |
 | Primary Grafana | http://100.56.48.174:32000 (admin/admin) |
 | Primary Prometheus | http://100.56.48.174:32001 |
