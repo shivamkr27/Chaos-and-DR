@@ -6,8 +6,21 @@ npm-debug.log*
 **/.terraform/
 *.tfstate
 *.tfstate.backup
+*.tfstate.*.backup
+*.bad_backup
 *.tfvars
+*.tfplan
+*.tfplan.bin
+tfplan.bin
 .terraform.lock.hcl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Cloudflare Wrangler
+workers/.wrangler/
 
 # Environment
 .env
