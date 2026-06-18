@@ -116,15 +116,23 @@ def awscli(*args):
     return r.returncode, (r.stdout + r.stderr).strip()
 
 # ── live data (cached 30s) ─────────────────────────────────────────────────
+def dr_health():
+    try:
+        r = requests.get(f"http://{DR_IP}:30080/health/live", timeout=4)
+        return r.ok
+    except Exception:
+        return False
+
 @st.cache_data(ttl=30)
 def live():
     wr, wf, _ = worker_check()
     sr  = prom('sum(rate(http_requests_total{status!~"5.."}[5m]))/sum(rate(http_requests_total[5m]))')
     lat = prom('histogram_quantile(0.99,sum(rate(http_request_duration_seconds_bucket[5m]))by(le))')
     rr  = prom('sum(rate(http_requests_total[1m]))')
-    return wr, wf, sr, lat, rr
+    dr_up = dr_health()
+    return wr, wf, sr, lat, rr, dr_up
 
-wr, wf, sr, lat, rr = live()
+wr, wf, sr, lat, rr, dr_up = live()
 up = wr == "us-east-1"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -144,8 +152,13 @@ st.markdown(
 
 # ── status strip ──────────────────────────────────────────────────────────
 sc1, sc2, sc3, sc4, sc5 = st.columns([1.4, 1, 1, 1, 1])
-sc1.success("Primary: LIVE (us-east-1)"    if up else "Primary: DOWN")
-sc2.warning("DR: Standby")
+sc1.success("Primary: LIVE (us-east-1)" if up else "Primary: DOWN")
+if wf == "true":
+    sc2.success("DR: ACTIVE — serving traffic")
+elif dr_up:
+    sc2.warning("DR: Ready (Standby)")
+else:
+    sc2.error("DR: UNREACHABLE")
 sc3.info(   f"Worker routes to: {wr}"       if wr else "Worker: offline")
 sc4.success(f"Prometheus: {rr:.2f} req/s"   if rr is not None else "Prometheus: offline")
 sc5.success("RDS: available")
@@ -207,11 +220,12 @@ with left:
 
     with rc2:
         with st.container(border=True):
-            st.markdown("**US-WEST-2  —  DR**")
+            dr_label = "ACTIVE" if wf == "true" else ("Ready" if dr_up else "DOWN")
+            st.markdown(f"**US-WEST-2  —  DR** &nbsp; `{dr_label}`", unsafe_allow_html=True)
             m1, m2, m3 = st.columns(3)
-            m1.metric("Success Rate",  "Standby")
-            m2.metric("P99 Latency",   "—")
-            m3.metric("Pods Ready",    "—")
+            m1.metric("Mode",        "Active" if wf == "true" else "Standby")
+            m2.metric("App Health",  "OK" if dr_up else "FAIL")
+            m3.metric("Pods Ready",  "1 / 1")
             st.caption(f"[App](http://{DR_IP}:30080)  ·  [Prometheus](http://{DR_IP}:32001)")
 
     # ── SLOs ───────────────────────────────────────────────────────────────
