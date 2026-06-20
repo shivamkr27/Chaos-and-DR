@@ -24,6 +24,30 @@ if [ ! -f "$YAML_FILE" ]; then
   exit 1
 fi
 
+# Experiment 04 stops the EC2 instance the Job runs on — applying it to the
+# primary cluster kills this script mid-execution, leaving primary down with
+# no automated recovery. Block it here and require running CLI directly.
+if [ "$EXPERIMENT" = "04-region-failure" ]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════╗"
+  echo "║  BLOCKED: 04-region-failure cannot run via run-chaos.sh     ║"
+  echo "║                                                              ║"
+  echo "║  This experiment stops the EC2 it runs on. Applying it      ║"
+  echo "║  as a K8s Job kills the job mid-execution.                  ║"
+  echo "║                                                              ║"
+  echo "║  Run it locally instead:                                     ║"
+  echo "║    aws ec2 stop-instances --region us-east-1 \\              ║"
+  echo "║      --instance-ids \$(aws ec2 describe-instances ...)       ║"
+  echo "║    # verify Worker failover:                                 ║"
+  echo "║    curl -sI https://chaos-dr-failove.shivamkumarbxr8\\      ║"
+  echo "║                .workers.dev/health/live                     ║"
+  echo "║    aws ec2 start-instances --region us-east-1 \\            ║"
+  echo "║      --instance-ids <same-id>                               ║"
+  echo "╚══════════════════════════════════════════════════════════════╝"
+  echo ""
+  exit 1
+fi
+
 echo "=== Running chaos experiment: ${EXPERIMENT} on ${EC2_IP} ==="
 
 echo "[1/3] Applying experiment YAML..."

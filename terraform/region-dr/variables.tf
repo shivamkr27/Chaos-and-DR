@@ -22,6 +22,12 @@ variable "app_image" {
   default = "your-dockerhub-username/chaos-dr-app:latest"
 }
 
+variable "allowed_ssh_cidr" {
+  description = "CIDR allowed SSH to the DR K3s node. Restrict to your IP (e.g. 1.2.3.4/32)."
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
 # RDS replica needs the primary DB instance ARN from region-primary outputs
 variable "primary_db_instance_arn" {
   description = "ARN of primary RDS instance — get from region-primary output after apply"
