@@ -53,10 +53,6 @@ spec:
                   sleep 10
 
                   log "Starting scheduled chaos workflow..."
-                  kubectl create job \
-                    --from=cronjob/chaos-schedule \
-                    "chaos-$(date +%Y%m%d-%H%M)" \
-                    -n "$NAMESPACE" || true
 
                   # Apply experiments in sequence
                   for exp in 01-pod-delete 02-network-latency 03-cpu-stress; do

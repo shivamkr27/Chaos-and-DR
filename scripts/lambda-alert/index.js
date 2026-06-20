@@ -2,14 +2,23 @@
 // Runtime: Node.js 20.x  |  Handler: index.handler
 // Env vars required: SNS_TOPIC_ARN, ALERT_SECRET
 
+const crypto = require("crypto");
 const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 
 const sns = new SNSClient({ region: process.env.AWS_REGION || "us-east-1" });
 
+function safeCompare(a, b) {
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
+
 exports.handler = async (event) => {
-  // Reject requests without the shared secret
   const secret = (event.headers || {})["x-alert-secret"];
-  if (secret !== process.env.ALERT_SECRET) {
+  const expected = process.env.ALERT_SECRET || "";
+  if (!secret || !safeCompare(secret, expected)) {
     return { statusCode: 403, body: "Forbidden" };
   }
 

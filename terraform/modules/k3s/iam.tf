@@ -44,27 +44,25 @@ resource "aws_iam_role_policy" "k3s_node" {
         }
       },
       {
-        # Route 53 for failover script
-        Sid    = "Route53Failover"
+        # Route 53 for failover script — List/Describe require Resource="*" (AWS limitation)
+        # ChangeResourceRecordSets is scoped to hosted zones only
+        Sid    = "Route53FailoverList"
         Effect = "Allow"
         Action = [
           "route53:ListHostedZones",
-          "route53:ChangeResourceRecordSets",
           "route53:ListHealthChecks",
           "route53:GetHealthCheckStatus"
         ]
         Resource = "*"
       },
       {
-        # RDS promote-read-replica for failover script
-        Sid    = "RDSPromotion"
+        Sid    = "Route53FailoverWrite"
         Effect = "Allow"
-        Action = [
-          "rds:PromoteReadReplica",
-          "rds:DescribeDBInstances"
-        ]
-        Resource = "*"
+        Action = ["route53:ChangeResourceRecordSets"]
+        Resource = "arn:aws:route53:::hostedzone/*"
       },
+      # RDS promotion removed — rds-replica module is disabled (free-tier demo).
+      # Re-add if enabling cross-region RDS replica: rds:PromoteReadReplica, rds:DescribeDBInstances
       {
         # Secrets Manager — DB password for failover script
         Sid    = "SecretAccess"

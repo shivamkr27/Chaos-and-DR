@@ -48,8 +48,9 @@ function metricsMiddleware(req, res, next) {
 
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - start) / 1e9;
-    // Normalise route so /api/items/123 and /api/items/456 share one label
-    const route = req.route?.path || req.path || 'unknown';
+    // Use Express route pattern (/api/items/:id) not the raw path — prevents
+    // unbounded label cardinality from 404s and bot scans hitting arbitrary paths.
+    const route = req.route?.path ?? 'unmatched';
 
     httpRequestsTotal.inc({
       method: req.method,

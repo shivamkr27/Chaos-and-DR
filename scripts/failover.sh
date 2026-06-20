@@ -62,42 +62,60 @@ promote_replica() {
   log "DR region is healthy at $DR_APP_IP"
 
   # Step 2: Promote RDS replica → standalone writable instance
-  log "[2/5] Promoting RDS replica to standalone primary..."
-  aws rds promote-read-replica \
-    --db-instance-identifier "$DR_REPLICA_ID" \
-    --region "$DR_REGION"
-
-  log "Waiting for replica promotion (this takes 2-5 minutes)..."
-  aws rds wait db-instance-available \
-    --db-instance-identifier "$DR_REPLICA_ID" \
-    --region "$DR_REGION"
-  log "RDS promotion complete"
-
-  # Step 3: Get new primary endpoint
-  NEW_DB_ENDPOINT=$(aws rds describe-db-instances \
+  # NOTE: rds-replica module is disabled by default (free-tier demo).
+  # This step is skipped if no replica exists — DR runs in degraded mode (no DB).
+  log "[2/5] Checking for RDS replica..."
+  DB_STATUS=$(aws rds describe-db-instances \
     --db-instance-identifier "$DR_REPLICA_ID" \
     --region "$DR_REGION" \
-    --query "DBInstances[0].Endpoint.Address" \
-    --output text)
-  log "New DB endpoint: $NEW_DB_ENDPOINT"
+    --query "DBInstances[0].DBInstanceStatus" \
+    --output text 2>/dev/null || echo "NOT_FOUND")
 
-  # Step 4: Update K8s secret in DR cluster with new DB host
-  log "[3/5] Updating DB endpoint in DR Kubernetes cluster via SSH..."
-  DB_PASS="${DB_PASSWORD:-ChaosD3v#2024!}"
+  if [ "$DB_STATUS" = "NOT_FOUND" ] || [ "$DB_STATUS" = "None" ]; then
+    warn "RDS replica '$DR_REPLICA_ID' not found — skipping promote step."
+    warn "DR will serve traffic in degraded mode (no DB). Enable rds-replica module to fix."
+    NEW_DB_ENDPOINT=""
+  else
+    log "Promoting RDS replica to standalone primary..."
+    aws rds promote-read-replica \
+      --db-instance-identifier "$DR_REPLICA_ID" \
+      --region "$DR_REGION"
+
+    log "Waiting for replica promotion (this takes 2-5 minutes)..."
+    aws rds wait db-instance-available \
+      --db-instance-identifier "$DR_REPLICA_ID" \
+      --region "$DR_REGION"
+    log "RDS promotion complete"
+
+    NEW_DB_ENDPOINT=$(aws rds describe-db-instances \
+      --db-instance-identifier "$DR_REPLICA_ID" \
+      --region "$DR_REGION" \
+      --query "DBInstances[0].Endpoint.Address" \
+      --output text)
+    log "New DB endpoint: $NEW_DB_ENDPOINT"
+  fi
+
+  # Step 3: Update K8s secret in DR cluster with new DB host (only if DB exists)
+  log "[3/5] Updating DB config in DR Kubernetes cluster via SSH..."
+  DB_PASS="${DB_PASSWORD:?ERROR: DB_PASSWORD env var must be set before running failover}"
   SSH_KEY="${SSH_KEY:-${HOME}/.ssh/chaos-dr}"
 
-  ssh -i "$SSH_KEY" \
-      -o StrictHostKeyChecking=no \
-      -o ConnectTimeout=15 \
-      ec2-user@"$DR_APP_IP" \
-      "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
-       kubectl create secret generic db-credentials --namespace chaos-dr \
-         --from-literal=DB_HOST='${NEW_DB_ENDPOINT}' \
-         --from-literal=DB_PASSWORD='${DB_PASS}' \
-         --dry-run=client -o yaml | kubectl apply -f - && \
-       kubectl rollout restart deployment/chaos-dr-app -n chaos-dr && \
-       kubectl rollout status deployment/chaos-dr-app -n chaos-dr --timeout=120s"
-  log "App pods restarted and pointing to promoted DB"
+  if [ -n "$NEW_DB_ENDPOINT" ]; then
+    ssh -i "$SSH_KEY" \
+        -o StrictHostKeyChecking=no \
+        -o ConnectTimeout=15 \
+        ec2-user@"$DR_APP_IP" \
+        "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
+         kubectl create secret generic db-credentials --namespace chaos-dr \
+           --from-literal=DB_HOST='${NEW_DB_ENDPOINT}' \
+           --from-literal=DB_PASSWORD='${DB_PASS}' \
+           --dry-run=client -o yaml | kubectl apply -f - && \
+         kubectl rollout restart deployment/chaos-dr-app -n chaos-dr && \
+         kubectl rollout status deployment/chaos-dr-app -n chaos-dr --timeout=120s"
+    log "App pods restarted and pointing to promoted DB"
+  else
+    warn "No DB endpoint — skipping K8s secret update. App will run without DB."
+  fi
 
   # Step 5: Route 53 — force immediate traffic shift
   # (Route 53 failover is automatic via health checks, but this forces it instantly)

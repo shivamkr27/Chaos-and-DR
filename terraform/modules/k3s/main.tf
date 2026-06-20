@@ -4,12 +4,12 @@ resource "aws_security_group" "k3s" {
   description = "K3s node traffic"
   vpc_id      = var.vpc_id
 
-  # SSH access (restricted to your IP in production)
+  # SSH access — set allowed_ssh_cidr in tfvars to restrict (e.g. "1.2.3.4/32")
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.allowed_ssh_cidr]
   }
 
   # App HTTP
