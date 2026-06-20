@@ -23,3 +23,9 @@ variable "app_image" {
   type        = string
   default     = "your-dockerhub-username/chaos-dr-app:latest"
 }
+
+variable "allowed_ssh_cidr" {
+  description = "CIDR allowed SSH to the primary K3s node. Restrict to your IP (e.g. 1.2.3.4/32)."
+  type        = string
+  default     = "0.0.0.0/0"
+}

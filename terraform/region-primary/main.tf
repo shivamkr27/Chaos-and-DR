@@ -16,14 +16,15 @@ module "rds" {
 }
 
 module "k3s" {
-  source         = "../modules/k3s"
-  project        = var.project
-  region_alias   = "primary"
-  aws_region     = var.aws_region
-  vpc_id         = module.vpc.vpc_id
-  subnet_id      = module.vpc.public_subnet_ids[0]
-  ssh_public_key = var.ssh_public_key
-  db_host        = module.rds.endpoint
-  db_password    = var.db_password
-  app_image      = var.app_image
+  source           = "../modules/k3s"
+  project          = var.project
+  region_alias     = "primary"
+  aws_region       = var.aws_region
+  vpc_id           = module.vpc.vpc_id
+  subnet_id        = module.vpc.public_subnet_ids[0]
+  ssh_public_key   = var.ssh_public_key
+  db_host          = module.rds.endpoint
+  db_password      = var.db_password
+  app_image        = var.app_image
+  allowed_ssh_cidr = var.allowed_ssh_cidr
 }

@@ -1,8 +1,9 @@
 # Copy this to terraform.tfvars and fill in real values
 # NEVER commit terraform.tfvars (it's in .gitignore)
 
-project        = "chaos-dr"
-aws_region     = "us-east-1"
-db_password    = "CHANGE_ME_strong_password_here"
-ssh_public_key = "ssh-rsa AAAA... your public key here"
-app_image      = "your-dockerhub-username/chaos-dr-app:latest"
+project          = "chaos-dr"
+aws_region       = "us-east-1"
+db_password      = "CHANGE_ME_strong_password_here"
+ssh_public_key   = "ssh-rsa AAAA... your public key here"
+app_image        = "your-dockerhub-username/chaos-dr-app:latest"
+allowed_ssh_cidr = "0.0.0.0/0"   # restrict to your IP in production: "1.2.3.4/32"
