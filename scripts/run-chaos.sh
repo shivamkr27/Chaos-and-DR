@@ -48,4 +48,4 @@ kubectl get pods -n chaos-dr"
 
 echo ""
 echo "=== Experiment ${EXPERIMENT} complete ==="
-echo "  Check dashboard: set PRIMARY_IP=${EC2_IP} or DR_IP=${EC2_IP} and run streamlit"
+echo "  Check dashboard: open docs/index.html or https://shivamkr27.github.io/Chaos-and-DR"

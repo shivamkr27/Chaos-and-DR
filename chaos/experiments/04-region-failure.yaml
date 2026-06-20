@@ -1,17 +1,29 @@
 # Experiment 4: Region Failure Simulation
 # What it does: Stops the primary region EC2 instance.
-#               Route 53 health check fails → traffic auto-shifts to DR.
+#               Cloudflare Worker detects failure on next probe → routes to DR.
 #               Then restarts EC2 to test recovery.
 #
-# What we expect: Route 53 detects failure within 30s (3 x 10s checks).
-#                 DNS failover propagates within 60s (TTL=30s).
-#                 Total user-visible downtime < 2 minutes.
+# What we expect: Cloudflare Worker health probe timeout (~4s) → routes to DR.
+#                 Total user-visible downtime < 5 seconds.
 #                 DR region handles all traffic without errors.
 #
-# SLO being tested: RTO (Regional) < 2 minutes
+# SLO being tested: RTO (Regional) < 5 seconds (Cloudflare Worker failover)
 #
-# NOTE: This experiment uses a Kubernetes Job (not a LitmusChaos CRD)
-#       because it calls AWS APIs to stop EC2 — not a pod-level action.
+# ⚠️  WARNING — DO NOT APPLY THIS TO THE PRIMARY CLUSTER.
+#     This Job stops the EC2 instance it runs on. Applying it to the primary
+#     K3s node will kill this Job mid-execution (after step 1), leaving
+#     primary stopped with no automated recovery.
+#
+#     Run this instead from a local machine with aws CLI:
+#       aws ec2 stop-instances --region us-east-1 --instance-ids <id>
+#       # verify: curl -sI https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live
+#       # expect: X-Served-By: us-west-2, X-Failover-Active: true
+#       aws ec2 start-instances --region us-east-1 --instance-ids <id>
+#
+#     If applying to DR cluster, ensure K3s node IAM role has
+#     ec2:StopInstances / ec2:StartInstances on primary region.
+#
+# NOTE: Uses a Kubernetes Job (not LitmusChaos CRD) because it calls AWS APIs.
 ---
 apiVersion: batch/v1
 kind: Job
