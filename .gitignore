@@ -40,3 +40,6 @@ logs/
 
 # Docker
 *.env
+
+# Personal notes — local reference only, never pushed
+NOTES.md
