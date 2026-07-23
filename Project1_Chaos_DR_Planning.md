@@ -1,6 +1,11 @@
 # Project 1: Chaos Engineering + Multi-Region Disaster Recovery
 ## Phase-Wise Planning Guide (Strategy, No Code)
 
+> **Historical planning doc** — written before implementation started. Some
+> choices here changed along the way (e.g. Route 53 → Cloudflare Worker for
+> failover, no ArgoCD, LitmusChaos dropped for manual chaos on the 1GB free-tier
+> node). See [README.md](README.md) for what was actually built.
+
 ---
 
 ## What You're Building (The Big Picture)

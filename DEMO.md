@@ -7,17 +7,20 @@ Use this during interviews or walkthroughs. Practice until it takes under 8 minu
 ## Setup (do 5 minutes before)
 
 ```bash
-# 1. Start Streamlit dashboard
-PRIMARY_IP=100.56.48.174 DR_IP=35.162.14.199 python -m streamlit run dashboard/app.py
+# 1. Open these in browser
+#    Tab 1: Dashboard (visual, simulated)  → https://shivamkr27.github.io/Chaos-and-DR (or open docs/index.html locally)
+#    Tab 2: Primary Prometheus             → http://100.56.48.174:32001
+#    Tab 3: DR app                         → http://35.162.14.199:30080/health/live
+#    Tab 4: Cloudflare Worker              → https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live
 
-# 2. Open these in browser
-#    Tab 1: Streamlit dashboard → http://localhost:8501
-#    Tab 2: Primary Prometheus  → http://100.56.48.174:32001
-#    Tab 3: DR app              → http://35.162.14.199:30080/health/live
-#    Tab 4: Cloudflare Worker   → https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live
+# 2. Have a terminal ready with SSH access for the real commands (the dashboard
+#    is a labeled simulation — it illustrates the flow but doesn't trigger real
+#    actions). Real chaos runs via:
+PRIMARY_IP=100.56.48.174
+./scripts/run-chaos.sh "$PRIMARY_IP" 01-pod-delete
 ```
 
-Verify both regions are green in the dashboard (top status strip).
+Verify both regions are green (Tab 2/3 health checks return `{"status":"ok"}`).
 
 ---
 
@@ -43,9 +46,15 @@ Point to SLO panel:
 
 ---
 
-## Part 2 — Pod Delete (click the button)
+## Part 2 — Pod Delete
 
-Click **Pod Delete** in the dashboard. Watch the terminal on the right.
+In the terminal, run:
+
+```bash
+./scripts/run-chaos.sh "$PRIMARY_IP" 01-pod-delete
+```
+
+(Point to the dashboard's Chaos Lab tab alongside for the visual — it's a simulation of this exact flow, not the trigger.)
 
 > "This deletes a running pod with grace-period=0 — hard kill, no warning.
 >  K3s detects the pod is gone and reschedules it immediately."
@@ -58,9 +67,11 @@ Point to the terminal output — you'll see the target pod name, the delete, the
 
 ---
 
-## Part 3 — Network Latency (click the button)
+## Part 3 — Network Latency
 
-Click **Network Latency**.
+```bash
+./scripts/run-chaos.sh "$PRIMARY_IP" 02-network-latency
+```
 
 > "This injects 300ms of latency via tc/netem — simulates a degraded network.
 >  The app keeps running. Slow queries complete slowly, not crash."
@@ -74,7 +85,9 @@ Point to the Prometheus dashboard at `:32001/graph`.
 
 ## Part 4 — Region Failure (the showstopper)
 
-Check the confirmation checkbox in the dashboard, then click **Kill** on Region Failure.
+```bash
+aws ec2 stop-instances --region us-east-1 --instance-ids <primary-instance-id>
+```
 
 > "I'm stopping the primary EC2 right now. All traffic should route to DR."
 
@@ -88,7 +101,11 @@ Show the response with DevTools Network tab open — `X-Served-By: us-west-2`, `
 > "Zero DNS change. Zero TTL wait. The Cloudflare Worker detects primary down on the next request
 >  and routes to DR. Total failover time: under 5 seconds from the EC2 stopping."
 
-Then click **Restart Primary EC2** to recover:
+Then restore it:
+
+```bash
+aws ec2 start-instances --region us-east-1 --instance-ids <primary-instance-id>
+```
 
 > "Primary comes back, K3s restarts, passes the health check, and Worker routes back automatically."
 

@@ -25,8 +25,8 @@ slos:
   - name: pod_recovery_time
     description: "Killed pods are rescheduled and ready within 30 seconds"
     target: "Pod Ready within 30 seconds of deletion"
-    prometheus_query: |
-      kube_pod_status_ready{namespace="chaos-dr", condition="true"}
+    # kube_pod_status_ready needs kube-state-metrics, which isn't deployed (keeps the
+    # 1GB t3.micro node lighter) — checked manually via how_to_check instead for now.
     how_to_check: |
       kubectl get events -n chaos-dr --sort-by=.lastTimestamp | grep -E "Killing|Started|Ready"
     chaos_tests:
@@ -48,26 +48,25 @@ slos:
   - name: hpa_scale_time
     description: "HPA adds pods within 90 seconds of sustained CPU spike"
     target: "currentReplicas > minReplicas within 90 seconds of CPU > 60%"
-    prometheus_query: |
-      kube_horizontalpodautoscaler_status_current_replicas{
-        namespace="chaos-dr",
-        horizontalpodautoscaler="chaos-dr-app"
-      }
+    # kube_horizontalpodautoscaler_status_current_replicas needs kube-state-metrics,
+    # not deployed — checked manually instead: kubectl get hpa chaos-dr-app -n chaos-dr -w
+    how_to_check: |
+      kubectl get hpa chaos-dr-app -n chaos-dr -w
     chaos_tests:
       - cpu-stress
-    pass_criteria: "Replica count increases from 3 to >3 before experiment ends"
+    pass_criteria: "Replica count increases from 2 to >2 before experiment ends"
 
   - name: regional_rto
-    description: "Traffic fails over to DR region within 2 minutes of primary failure"
-    target: "RTO (Regional) < 120 seconds"
+    description: "Traffic fails over to DR region within seconds of primary failure"
+    target: "RTO (Regional) < 30 seconds"
     how_measured: |
-      Time from EC2 stop → DR health probe passes.
-      Measured in Grafana: failover_event timestamp vs first_dr_success timestamp.
+      Time from EC2 stop → Cloudflare Worker's X-Served-By header flips to DR region.
+      There's no Route53/DNS involved (see README: Worker health-probes per request) —
+      failover is a per-request routing decision, not a DNS change with TTL to wait out.
     sub_targets:
-      route53_detection: "< 30 seconds  (3 x 10s health check intervals)"
-      dns_propagation:   "< 30 seconds  (TTL=30s)"
-      dr_app_readiness:  "< 60 seconds  (already running, just needs traffic)"
-      total_rto:         "< 120 seconds"
+      worker_probe_timeout: "< 2 seconds  (per-request primary health probe, workers/failover.js)"
+      dr_app_readiness:     "< 5 seconds  (DR already running, just needs traffic)"
+      total_rto:            "< 30 seconds (proven live: < 5s, see README SLO table)"
     chaos_tests:
       - region-failure
 

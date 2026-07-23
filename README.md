@@ -159,7 +159,10 @@ for IP in $PRIMARY_IP $DR_IP; do
   scp -i ~/.ssh/chaos-dr monitoring/prometheus/prometheus-standalone.yaml ec2-user@$IP:/tmp/
   scp -i ~/.ssh/chaos-dr monitoring/grafana.yaml ec2-user@$IP:/tmp/
   ssh -i ~/.ssh/chaos-dr ec2-user@$IP \
-    "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f /tmp/prometheus-standalone.yaml -f /tmp/grafana.yaml"
+    "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f - && \
+     KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl create secret generic grafana-admin -n monitoring \
+       --from-literal=password=\"\$(openssl rand -base64 24)\" --dry-run=client -o yaml | kubectl apply -f - && \
+     KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f /tmp/prometheus-standalone.yaml -f /tmp/grafana.yaml"
 done
 ```
 

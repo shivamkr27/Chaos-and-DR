@@ -4,6 +4,7 @@
 project          = "chaos-dr"
 aws_region       = "us-east-1"
 db_password      = "CHANGE_ME_strong_password_here"
+api_key          = "CHANGE_ME_random_api_key_here"
 ssh_public_key   = "ssh-rsa AAAA... your public key here"
 app_image        = "your-dockerhub-username/chaos-dr-app:latest"
-allowed_ssh_cidr = "0.0.0.0/0"   # restrict to your IP in production: "1.2.3.4/32"
+allowed_ssh_cidr = "1.2.3.4/32"   # REQUIRED — your IP only, no default (was 0.0.0.0/0)

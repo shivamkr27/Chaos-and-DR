@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: ./app
@@ -12,7 +10,9 @@ services:
       DB_NAME: chaosdb
       DB_USER: postgres
       DB_PASSWORD: postgres
+      DB_SSL: "false"
       AWS_REGION: local
+      API_KEY: local-dev-key
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,8 +24,6 @@ services:
       POSTGRES_DB: chaosdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

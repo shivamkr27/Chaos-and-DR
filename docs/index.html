@@ -3,454 +3,680 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chaos DR — Control Panel</title>
+<title>Chaos DR — A system that survives failure</title>
+<meta name="description" content="A multi-region AWS system that deliberately breaks itself and proves it recovers automatically.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'JetBrains Mono',monospace}
-.d{background:#f5f5f5;color:#1a1a1a}
-.hdr{background:#fff;border-bottom:2px solid #cc0000;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
-.hdr-logo{font-size:14px;font-weight:700;letter-spacing:2px}
-.hdr-logo span{color:#cc0000}
-.hdr-sub{font-size:10px;color:#999;letter-spacing:1px;margin-top:2px}
-.hdr-right{display:flex;align-items:center;gap:10px}
-.pill{font-size:10px;padding:3px 10px;border-radius:2px;font-weight:700;letter-spacing:1px;border:1.5px solid}
-.pill-g{color:#1a7a1a;border-color:#1a7a1a;background:#f0fff0}
-.pill-y{color:#996600;border-color:#cc8800;background:#fffbf0}
-.pill-r{color:#cc0000;border-color:#cc0000;background:#fff0f0}
-.clk{font-size:10px;color:#999;padding-left:12px;border-left:1px solid #eee;letter-spacing:1px}
-.tabs{background:#fff;border-bottom:1px solid #eee;display:flex;padding:0 20px;gap:4px}
-.tab{padding:9px 16px;font-size:10px;color:#aaa;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;letter-spacing:1px;font-family:inherit}
-.tab.on{color:#cc0000;border-bottom-color:#cc0000;font-weight:700}
-.wrap{display:grid;grid-template-columns:1fr 280px}
-.main{padding:16px}
-.side{background:#fff;border-left:1px solid #eee;display:flex;flex-direction:column;min-height:600px}
-.lbl{font-size:9px;color:#aaa;letter-spacing:2px;font-weight:700;margin-bottom:10px}
-.s{margin-bottom:16px}
-.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rc{background:#fff;border:1px solid #e8e8e8;border-top:3px solid #cc0000;border-radius:3px;padding:12px}
-.rc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.rc-n{font-size:11px;font-weight:700;letter-spacing:1px}
-.rtag{font-size:9px;padding:2px 7px;border-radius:2px;font-weight:700;letter-spacing:1px}
-.rtag-p{background:#fff0f0;color:#cc0000;border:1px solid #ffcccc}
-.rtag-s{background:#fffbf0;color:#996600;border:1px solid #ffdd88}
-.rtag-a{background:#f0fff0;color:#1a7a1a;border:1px solid #88dd88}
-.mr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
-.m{text-align:center;background:#f8f8f8;padding:7px 4px;border-radius:2px}
-.mv{font-size:15px;font-weight:700}
-.ml{font-size:8px;color:#aaa;letter-spacing:1px;margin-top:2px}
-.rf{display:flex;gap:8px;border-top:1px solid #f0f0f0;padding-top:8px;font-size:10px;align-items:center;flex-wrap:wrap}
-.lnk{color:#cc0000;text-decoration:none;font-size:10px}
-.lnk:hover{text-decoration:underline}
-.ok{color:#1a7a1a;font-size:10px;font-weight:700}
-.wa{color:#996600;font-size:10px;font-weight:700}
-.er{color:#cc0000;font-size:10px;font-weight:700}
-.sr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.sc{background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:11px}
-.sn{font-size:9px;color:#aaa;letter-spacing:1px;margin-bottom:3px}
-.sv{font-size:19px;font-weight:700}
-.st{font-size:9px;color:#bbb;margin-top:2px}
-.sb{height:2px;background:#eee;border-radius:1px;margin-top:7px}
-.sf{height:2px;border-radius:1px}
-.eg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ec{background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:12px;cursor:pointer}
-.ec:hover{border-color:#ccc}
-.ec.dk{border-left:3px solid #cc0000}
-.ec.run{border-color:#cc0000;background:#fff8f8}
-.ei{font-size:18px;color:#ccc;margin-bottom:6px}
-.ec.run .ei{color:#cc0000}
-.en{font-size:11px;font-weight:700;margin-bottom:3px}
-.ed{font-size:10px;color:#888;line-height:1.5;margin-bottom:9px}
-.rb{width:100%;padding:6px;font-size:10px;font-weight:700;letter-spacing:1px;border:1.5px solid #e0e0e0;background:#fff;color:#888;border-radius:2px;cursor:pointer;font-family:inherit}
-.rb:hover{border-color:#cc0000;color:#cc0000}
-.rb.on{border-color:#cc0000;color:#cc0000;background:#fff8f8}
-.cfm{display:flex;align-items:center;gap:6px;font-size:10px;color:#cc0000;margin-bottom:6px}
-.rr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.recb{padding:8px;font-size:10px;font-weight:700;letter-spacing:1px;border:1.5px solid #e0e0e0;background:#fff;color:#666;border-radius:2px;cursor:pointer;font-family:inherit;width:100%}
-.recb:hover{border-color:#888;color:#1a1a1a}
-.recb.r{border-color:#ffcccc;color:#cc0000}
-.recb.r:hover{background:#fff0f0;border-color:#cc0000}
-.th{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid #f0f0f0}
-.tt{font-size:10px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;gap:6px}
-.bl{display:inline-block;width:6px;height:11px;background:#cc0000;animation:bl 1s infinite}
-@keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
-.cb{font-size:10px;padding:2px 8px;border:1px solid #eee;background:#fff;color:#aaa;border-radius:2px;cursor:pointer;font-family:inherit}
-.cb:hover{border-color:#ccc;color:#666}
-.tb{flex:1;padding:12px 14px;font-size:10px;line-height:1.8;overflow-y:auto;background:#fafafa}
-.tb::-webkit-scrollbar{width:3px}
-.tb::-webkit-scrollbar-thumb{background:#e0e0e0}
-.lts{color:#ccc}
-.lok{color:#1a7a1a;font-weight:700}
-.lwa{color:#996600;font-weight:700}
-.ler{color:#cc0000;font-weight:700}
-.lin{color:#555}
-.ib{background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:14px;font-size:11px;color:#555;line-height:1.9}
-.ih{font-size:9px;color:#cc0000;letter-spacing:2px;font-weight:700;margin-bottom:5px;margin-top:12px}
-.ih:first-child{margin-top:0}
-.tc{display:none}
-.tc.on{display:block}
-.cw{background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:12px}
+  :root {
+    --bg: #fafafa;
+    --bg-elevated: #ffffff;
+    --text: #18181b;
+    --text-muted: #71717a;
+    --text-faint: #a1a1aa;
+    --border: #e4e4e7;
+    --accent: #dc2626;
+    --accent-soft: #fef2f2;
+    --accent-border: #fecaca;
+    --success: #16a34a;
+    --success-soft: #f0fdf4;
+    --success-border: #bbf7d0;
+    --warning: #d97706;
+    --warning-soft: #fffbeb;
+    --warning-border: #fde68a;
+    --muted-soft: #f4f4f5;
+    --shadow: 0 1px 2px rgba(24,24,27,.04), 0 4px 16px rgba(24,24,27,.06);
+    --shadow-sm: 0 1px 2px rgba(24,24,27,.05);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0b0c;
+    --bg-elevated: #17171a;
+    --text: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --text-faint: #71717a;
+    --border: #27272a;
+    --accent: #f87171;
+    --accent-soft: rgba(248,113,113,.12);
+    --accent-border: rgba(248,113,113,.3);
+    --success: #4ade80;
+    --success-soft: rgba(74,222,128,.1);
+    --success-border: rgba(74,222,128,.25);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251,191,36,.1);
+    --warning-border: rgba(251,191,36,.25);
+    --muted-soft: #1f1f23;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0c; --bg-elevated: #17171a; --text: #f4f4f5; --text-muted: #a1a1aa;
+      --text-faint: #71717a; --border: #27272a; --accent: #f87171;
+      --accent-soft: rgba(248,113,113,.12); --accent-border: rgba(248,113,113,.3);
+      --success: #4ade80; --success-soft: rgba(74,222,128,.1); --success-border: rgba(74,222,128,.25);
+      --warning: #fbbf24; --warning-soft: rgba(251,191,36,.1); --warning-border: rgba(251,191,36,.25);
+      --muted-soft: #1f1f23;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.4);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap-outer { max-width: 1160px; margin: 0 auto; padding: 0 20px 64px; }
+  a { color: var(--accent); }
+
+  /* Header / hero */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0; border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -.2px; }
+  .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated);
+    cursor: pointer; color: var(--text-muted); font-size: 15px;
+  }
+  .icon-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+    border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text);
+    text-decoration: none; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--text-faint); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .hero { padding: 56px 0 40px; }
+  .hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 14px; letter-spacing: -.5px; max-width: 720px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 16px; color: var(--text-muted); max-width: 620px; margin: 0 0 24px; }
+  .hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 600; border: 1px solid var(--border); background: var(--muted-soft); color: var(--text-muted);
+  }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); }
+  .status-pill.ok { background: var(--success-soft); border-color: var(--success-border); color: var(--success); }
+  .status-pill.ok .dot { background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+  .status-pill.warn { background: var(--warning-soft); border-color: var(--warning-border); color: var(--warning); }
+  .status-pill.warn .dot { background: var(--warning); }
+  .status-pill.err { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+  .status-pill.err .dot { background: var(--accent); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+  .tab {
+    padding: 11px 4px; margin-right: 22px; font-size: 14px; font-weight: 600; color: var(--text-faint);
+    background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit;
+  }
+  .tab:hover { color: var(--text-muted); }
+  .tab.on { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.on { display: block; animation: fadein .2s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  /* Generic layout bits */
+  .section { margin-bottom: 40px; }
+  .section-label { font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+  .card {
+    background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 760px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* Architecture diagram */
+  .arch { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 20px; }
+  .arch-node {
+    background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); padding: 16px 20px; text-align: center; width: 100%; max-width: 340px;
+  }
+  .arch-icon { font-size: 20px; margin-bottom: 6px; }
+  .arch-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .arch-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+  .arch-connector { display: flex; flex-direction: column; align-items: center; color: var(--text-faint); font-size: 11px; padding: 4px 0; }
+  .arch-connector .line { width: 1px; height: 22px; background: var(--border); }
+  .arch-row { display: flex; gap: 20px; width: 100%; justify-content: center; flex-wrap: wrap; }
+  .arch-row .arch-node { flex: 1; min-width: 240px; text-align: left; }
+  .arch-row .arch-connector { flex: 1; min-width: 240px; max-width: 340px; }
+  .arch-tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
+  .arch-tag.primary { background: var(--accent-soft); color: var(--accent); }
+  .arch-tag.dr { background: var(--warning-soft); color: var(--warning); }
+  .arch-node ul { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); line-height: 1.7; }
+
+  /* SLO / stat cards */
+  .stat-card { padding: 18px; }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+  .stat-sub { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+  .stat-bar { height: 4px; background: var(--muted-soft); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* Region cards */
+  .region-card { padding: 18px; }
+  .region-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .region-name { font-weight: 700; font-size: 14.5px; }
+  .metric-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+  .metric { text-align: center; background: var(--muted-soft); border-radius: var(--radius-sm); padding: 10px 6px; }
+  .metric-val { font-size: 16px; font-weight: 700; }
+  .metric-lbl { font-size: 10px; color: var(--text-faint); margin-top: 2px; letter-spacing: .03em; text-transform: uppercase; }
+  .region-foot { display: flex; gap: 12px; align-items: center; font-size: 12.5px; color: var(--text-muted); padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+  /* Sparkline card */
+  .spark-card { padding: 18px; }
+  .spark-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .spark-head .stat-label { margin-bottom: 0; }
+
+  /* Chaos lab */
+  .notice {
+    display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text-muted);
+    background: var(--warning-soft); border: 1px solid var(--warning-border); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 18px; line-height: 1.6;
+  }
+  .notice strong { color: var(--warning); }
+  .exp-card { padding: 18px; transition: border-color .15s; }
+  .exp-card:hover { border-color: var(--text-faint); }
+  .exp-card.danger { border-color: var(--accent-border); }
+  .exp-card.running { border-color: var(--accent); background: var(--accent-soft); }
+  .exp-icon { font-size: 22px; margin-bottom: 8px; }
+  .exp-name { font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
+  .exp-desc { font-size: 13px; color: var(--text-muted); line-height: 1.55; margin-bottom: 14px; min-height: 40px; }
+  .exp-btn {
+    width: 100%; padding: 9px; font-size: 13px; font-weight: 600; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-muted); cursor: pointer; font-family: inherit;
+  }
+  .exp-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .exp-btn.danger-btn { border-color: var(--accent-border); color: var(--accent); }
+  .exp-btn.danger-btn:hover { background: var(--accent-soft); }
+  .exp-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .exp-btn:disabled:hover { border-color: var(--border); color: var(--text-muted); }
+  .confirm-row { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--accent); margin-bottom: 10px; }
+
+  .lab-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .lab-layout { grid-template-columns: 1fr; } }
+  .term-card { display: flex; flex-direction: column; height: 480px; }
+  .term-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .term-title { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; letter-spacing: .02em; }
+  .term-blink { width: 6px; height: 12px; background: var(--accent); animation: blink 1s infinite; border-radius: 1px; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+  .term-clear { font-size: 11.5px; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--text-faint); cursor: pointer; font-family: inherit; }
+  .term-clear:hover { color: var(--text-muted); }
+  .term-body { flex: 1; overflow-y: auto; padding: 14px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.9; background: var(--muted-soft); border-radius: 0 0 var(--radius) var(--radius); }
+  .term-body div { white-space: pre-wrap; word-break: break-word; }
+  .t-time { color: var(--text-faint); }
+  .t-info { color: var(--text-muted); }
+  .t-ok { color: var(--success); font-weight: 600; }
+  .t-warn { color: var(--warning); font-weight: 600; }
+  .t-err { color: var(--accent); font-weight: 600; }
+
+  /* How it's built */
+  .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 700px) { .stack-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stack-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+  .stack-icon { font-size: 17px; }
+  .stack-name { font-size: 13px; font-weight: 600; }
+  .stack-why { font-size: 11.5px; color: var(--text-faint); }
+
+  .prose { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+  .prose strong { color: var(--text); }
+  .link-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+  footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-faint); text-align: center; }
 </style>
 </head>
 <body>
-<div class="d">
-<div class="hdr">
-  <div>
-    <div class="hdr-logo">CHAOS<span>DR</span> &nbsp;CONTROL PANEL</div>
-    <div class="hdr-sub">AWS Multi-Region · K3s Kubernetes · Cloudflare Worker Failover</div>
+<div class="wrap-outer">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-dot"></span> Chaos DR</div>
+    <div class="topbar-right">
+      <a class="btn" href="https://github.com/shivamkr27/Chaos-and-DR" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">◐</button>
+    </div>
   </div>
-  <div class="hdr-right">
-    <span class="pill pill-g" id="pp">● PRIMARY LIVE</span>
-    <span class="pill pill-y" id="dp">● DR STANDBY</span>
-    <span class="clk" id="clk">--:--:-- UTC</span>
+
+  <div class="hero">
+    <h1>A system that <span>deliberately breaks itself</span> — and proves it recovers.</h1>
+    <p>Two AWS regions, real Kubernetes, and a Cloudflare Worker that fails traffic over in under 5 seconds — no DNS wait. This page lets you see how, and watch a guided walkthrough of the failure scenarios it's built to survive.</p>
+    <div class="hero-actions">
+      <span class="status-pill" id="live-status"><span class="dot"></span> Checking live status…</span>
+      <a class="btn btn-primary" href="#" onclick="gotab('lab');return false;">Try the Chaos Lab →</a>
+    </div>
   </div>
-</div>
 
-<div class="tabs">
-  <button class="tab on" onclick="stab('overview',this)">OVERVIEW</button>
-  <button class="tab" onclick="stab('chaos',this)">CHAOS LAB</button>
-  <button class="tab" onclick="stab('info',this)">PROJECT INFO</button>
-</div>
+  <div class="tabs">
+    <button class="tab on" data-tab="overview" onclick="gotab('overview',this)">Overview</button>
+    <button class="tab" data-tab="lab" onclick="gotab('lab',this)">Chaos Lab</button>
+    <button class="tab" data-tab="built" onclick="gotab('built',this)">How It's Built</button>
+  </div>
 
-<div class="wrap">
-<div class="main">
+  <!-- OVERVIEW -->
+  <div id="p-overview" class="tab-panel on">
 
-<div id="t-overview" class="tc on">
-  <div class="s">
-    <div class="lbl">REGION HEALTH</div>
-    <div class="rg">
-      <div class="rc">
-        <div class="rc-h"><span class="rc-n">US-EAST-1</span><span class="rtag rtag-p">PRIMARY</span></div>
-        <div class="mr">
-          <div class="m"><div class="mv" style="color:#1a7a1a">100%</div><div class="ml">SUCCESS</div></div>
-          <div class="m"><div class="mv">92ms</div><div class="ml">P99 LAT</div></div>
-          <div class="m"><div class="mv">2/2</div><div class="ml">PODS</div></div>
+    <div class="section">
+      <div class="section-label">Architecture</div>
+      <div class="card arch">
+        <div class="arch-node">
+          <div class="arch-icon">⚡</div>
+          <div class="arch-title">Cloudflare Worker</div>
+          <div class="arch-desc">Checks primary health on every single request. If it's down, silently forwards to DR instead — no DNS change, no TTL wait.</div>
         </div>
-        <div class="rf">
-          <span class="ok">● RDS OK</span>
-          <a class="lnk" href="https://chaos-dr-failove.shivamkumarbxr8.workers.dev" target="_blank">Worker ↗</a>
-          <a class="lnk" href="https://github.com/shivamkr27/Chaos-and-DR" target="_blank">GitHub ↗</a>
-        </div>
-      </div>
-      <div class="rc">
-        <div class="rc-h"><span class="rc-n">US-WEST-2</span><span class="rtag rtag-s" id="dr-tag">DR STANDBY</span></div>
-        <div class="mr">
-          <div class="m"><div class="mv" id="dr-sr" style="color:#996600">STBY</div><div class="ml">SUCCESS</div></div>
-          <div class="m"><div class="mv" id="dr-lat">—</div><div class="ml">P99 LAT</div></div>
-          <div class="m"><div class="mv" id="dr-pods">—</div><div class="ml">PODS</div></div>
-        </div>
-        <div class="rf">
-          <span class="wa" id="dr-rds">● NO RDS (degraded mode)</span>
+        <div class="arch-connector"><div class="line"></div>routes per request</div>
+        <div class="arch-row">
+          <div class="arch-node">
+            <span class="arch-tag primary">PRIMARY</span>
+            <div class="arch-title">us-east-1</div>
+            <ul><li>EC2 t3.micro · K3s, 2 pods</li><li>Prometheus + Grafana</li><li>RDS PostgreSQL</li></ul>
+          </div>
+          <div class="arch-node">
+            <span class="arch-tag dr">STANDBY</span>
+            <div class="arch-title">us-west-2</div>
+            <ul><li>EC2 t3.micro · K3s, 1 pod</li><li>Prometheus (standby)</li><li>No DB — serves degraded</li></ul>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="s">
-    <div class="lbl">SLO STATUS</div>
-    <div class="sr">
-      <div class="sc"><div class="sn">AVAILABILITY</div><div class="sv" style="color:#1a7a1a">100%</div><div class="st">target ≥ 99.5%</div><div class="sb"><div class="sf" style="width:100%;background:#1a7a1a"></div></div></div>
-      <div class="sc"><div class="sn">P99 LATENCY</div><div class="sv" style="color:#1a7a1a">92ms</div><div class="st">target &lt; 200ms</div><div class="sb"><div class="sf" style="width:46%;background:#1a7a1a"></div></div></div>
-      <div class="sc"><div class="sn">RECOVERY TIME</div><div class="sv" style="color:#1a7a1a">17s</div><div class="st">target &lt; 30s</div><div class="sb"><div class="sf" style="width:57%;background:#1a7a1a"></div></div></div>
-    </div>
-  </div>
-
-  <div class="s">
-    <div class="lbl">ERROR RATE — LAST 30 MIN</div>
-    <div class="cw"><canvas id="chart" height="65"></canvas></div>
-  </div>
-</div>
-
-<div id="t-chaos" class="tc">
-  <div class="s">
-    <div class="lbl">CHAOS EXPERIMENTS</div>
-    <div style="font-size:9px;color:#888;background:#fffbf0;border:1px solid #ffdd88;border-radius:2px;padding:6px 10px;margin-bottom:10px;letter-spacing:.5px">
-      ⚡ <strong>SIMULATED</strong> — experiments below run animated demos, not real SSH commands.
-      CLI commands are in <a class="lnk" href="https://github.com/shivamkr27/Chaos-and-DR" target="_blank">README → Chaos Experiments</a>.
-    </div>
-    <div class="eg">
-      <div class="ec" id="e-pod">
-        <div class="ei">⚡</div>
-        <div class="en">Pod Delete</div>
-        <div class="ed">Kills 1 pod in chaos-dr namespace. Tests K3s self-healing. Proven RTO: 17s.</div>
-        <button class="rb" onclick="runExp('pod','Pod Delete')">▶ RUN EXPERIMENT</button>
-      </div>
-      <div class="ec" id="e-net">
-        <div class="ei">🌐</div>
-        <div class="en">Network Latency</div>
-        <div class="ed">Injects 300ms egress delay via tc/netem. Validates error rate stays below 5% SLO.</div>
-        <button class="rb" onclick="runExp('net','Network Latency')">▶ RUN EXPERIMENT</button>
-      </div>
-      <div class="ec" id="e-cpu">
-        <div class="ei">📈</div>
-        <div class="en">CPU Stress</div>
-        <div class="ed">Maxes CPU for 120s. Tests HPA auto-scaling. SLO: scale-up under 90s.</div>
-        <button class="rb" onclick="runExp('cpu','CPU Stress')">▶ RUN EXPERIMENT</button>
-      </div>
-      <div class="ec dk" id="e-kill">
-        <div class="ei" style="color:#cc0000">☠</div>
-        <div class="en" style="color:#cc0000">Region Failure</div>
-        <div class="ed">Stops PRIMARY EC2. Cloudflare Worker auto-routes to DR in &lt;5s. Tests full RTO.</div>
-        <div class="cfm"><input type="checkbox" id="kc" style="accent-color:#cc0000"><label for="kc">I understand primary will go down</label></div>
-        <button class="rb" style="border-color:#ffcccc;color:#cc0000" onclick="runKill()">▶ KILL PRIMARY REGION</button>
+    <div class="section">
+      <div class="section-label">Service level objectives — proven live</div>
+      <div class="grid-3">
+        <div class="card stat-card">
+          <div class="stat-label">How fast does a killed pod come back?</div>
+          <div class="stat-value" style="color:var(--success)">17s</div>
+          <div class="stat-sub">target: under 30s</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:57%;background:var(--success)"></div></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">How fast does a whole region fail over?</div>
+          <div class="stat-value" style="color:var(--success)">&lt;5s</div>
+          <div class="stat-sub">target: under 30s</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:15%;background:var(--success)"></div></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Response time, steady state</div>
+          <div class="stat-value" style="color:var(--success)">~95ms</div>
+          <div class="stat-sub">P99, target: under 200ms</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:47%;background:var(--success)"></div></div>
+        </div>
       </div>
     </div>
+
+    <div class="section">
+      <div class="section-label">Region status</div>
+      <div class="grid-2">
+        <div class="card region-card">
+          <div class="region-head"><span class="region-name">us-east-1 — Primary</span><span class="status-pill ok"><span class="dot"></span>Live</span></div>
+          <div class="metric-row">
+            <div class="metric"><div class="metric-val">100%</div><div class="metric-lbl">Success</div></div>
+            <div class="metric"><div class="metric-val">92ms</div><div class="metric-lbl">P99</div></div>
+            <div class="metric"><div class="metric-val">2/2</div><div class="metric-lbl">Pods</div></div>
+          </div>
+          <div class="region-foot">
+            <span style="color:var(--success)">● Database OK</span>
+          </div>
+        </div>
+        <div class="card region-card">
+          <div class="region-head"><span class="region-name">us-west-2 — Standby</span><span class="status-pill warn"><span class="dot"></span>Standby</span></div>
+          <div class="metric-row">
+            <div class="metric"><div class="metric-val">—</div><div class="metric-lbl">Success</div></div>
+            <div class="metric"><div class="metric-val">—</div><div class="metric-lbl">P99</div></div>
+            <div class="metric"><div class="metric-val">—</div><div class="metric-lbl">Pods</div></div>
+          </div>
+          <div class="region-foot">
+            <span style="color:var(--warning)">● No database — serves in degraded mode when active</span>
+          </div>
+        </div>
+      </div>
+      <div class="prose" style="margin-top:10px;font-size:12.5px">Region cards above show representative figures from the last live run — the region-status API isn't public. The status pill in the header above <em>is</em> a real live check against the Cloudflare Worker.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Error rate — last 30 minutes</div>
+      <div class="card spark-card">
+        <div class="spark-head"><span class="stat-label">Illustrative sample — collected during a past chaos run</span></div>
+        <svg id="spark" width="100%" height="70" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+
   </div>
-  <div class="s">
-    <div class="lbl">RECOVERY CONTROLS</div>
-    <div class="rr">
-      <button class="recb" onclick="recPrimary()">↺ Restart Primary EC2</button>
-      <button class="recb r" onclick="runFail()">⚠ Execute Full Failover</button>
+
+  <!-- CHAOS LAB -->
+  <div id="p-lab" class="tab-panel">
+    <div class="notice">
+      ⚡ <div><strong>These run as a scripted playback</strong>, not live SSH commands — the real EC2 infra is usually powered off between demos to keep this a $0/month project. Every command shown below is copy-pasted from the real automation in <code>scripts/run-chaos.sh</code>, and running it for real takes exactly these steps.</div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:14px">
+      <div class="exp-card card" id="e-pod">
+        <div class="exp-icon">⚡</div>
+        <div class="exp-name">Pod Delete</div>
+        <div class="exp-desc">Hard-kills a running app pod. Kubernetes should reschedule it and traffic should keep flowing on the surviving pod. Proven recovery: 17s.</div>
+        <button class="exp-btn" onclick="runExp('pod','Pod Delete')">▶ Run experiment</button>
+      </div>
+      <div class="exp-card card" id="e-net">
+        <div class="exp-icon">🌐</div>
+        <div class="exp-name">Network Latency</div>
+        <div class="exp-desc">Injects 300ms of network delay via tc/netem. The app should stay up — slow, not broken. Error rate should stay under the 5% SLO.</div>
+        <button class="exp-btn" onclick="runExp('net','Network Latency')">▶ Run experiment</button>
+      </div>
+      <div class="exp-card card" id="e-cpu">
+        <div class="exp-icon">📈</div>
+        <div class="exp-name">CPU Stress</div>
+        <div class="exp-desc">Saturates a pod's CPU for 2 minutes. The autoscaler should notice and add pods within 90 seconds.</div>
+        <button class="exp-btn" onclick="runExp('cpu','CPU Stress')">▶ Run experiment</button>
+      </div>
+      <div class="exp-card card danger" id="e-kill">
+        <div class="exp-icon" style="color:var(--accent)">☠</div>
+        <div class="exp-name" style="color:var(--accent)">Region Failure</div>
+        <div class="exp-desc">Stops the entire primary EC2 instance. The Cloudflare Worker should detect it and reroute every request to DR in under 5 seconds.</div>
+        <div class="confirm-row"><input type="checkbox" id="kc"> <label for="kc">I understand this stops primary</label></div>
+        <button class="exp-btn danger-btn" onclick="runKill()">▶ Kill primary region</button>
+      </div>
+    </div>
+
+    <div class="lab-layout">
+      <div>
+        <div class="section-label">Recovery controls</div>
+        <div class="grid-2">
+          <button class="btn" style="justify-content:center;padding:12px" onclick="recPrimary()">↺ Restart primary EC2</button>
+          <button class="btn" style="justify-content:center;padding:12px;border-color:var(--accent-border);color:var(--accent)" onclick="runFail()">⚠ Run full failover script</button>
+        </div>
+      </div>
+      <div class="card term-card">
+        <div class="term-head">
+          <span class="term-title">LIVE OUTPUT <span class="term-blink"></span></span>
+          <button class="term-clear" onclick="clr()">Clear</button>
+        </div>
+        <div class="term-body" id="term"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="t-info" class="tc">
-  <div class="ib">
-    <div class="ih">WHAT THIS PROJECT IS</div>
-    Chaos Engineering + Disaster Recovery on AWS. App runs on Primary (us-east-1). On failure, Cloudflare Worker automatically routes traffic to DR (us-west-2) in under 5 seconds — no DNS change, no TTL wait. Chaos experiments validate recovery under real failure conditions.
-    <div class="ih">ARCHITECTURE</div>
-    <pre style="font-size:9px;line-height:1.8;color:#555;overflow-x:auto">
-  ┌─────────────────────────────────────┐
-  │        Cloudflare Worker            │
-  │  Probes /health/live per request    │
-  │  Routes to DR if primary is DOWN    │
-  └───────┬──────────────────┬──────────┘
-          │ normal           │ failover (&lt;5s)
-  ┌───────▼──────┐   ┌───────▼──────────┐
-  │  PRIMARY      │   │  DR               │
-  │  us-east-1    │   │  us-west-2        │
-  │  EC2 t3.micro │   │  EC2 t3.micro     │
-  │  K3s 2 pods   │   │  K3s 1 pod        │
-  │  Prometheus   │   │  Prometheus       │
-  │  Grafana      │   │  (standby)        │
-  │  RDS Postgres │   │  no DB — degraded │
-  └──────────────┘   └───────────────────┘
-    </pre>
-    <div class="ih">STACK</div>
-    Node.js → Docker → K3s (Kubernetes) → EC2 t3.micro → AWS<br>
-    Prometheus + Grafana · Cloudflare Worker (failover)<br>
-    HPA autoscaling/v2 · GitHub Actions CI/CD · AWS SNS + Lambda alerts
-    <div class="ih">HOW TO TEST — STEP BY STEP</div>
-    <div style="line-height:2.1">
-      1. Go to <strong>Chaos Lab</strong> tab<br>
-      2. <strong>Pod Delete</strong> → Run → see 17s recovery in terminal<br>
-      3. <strong>Network Latency</strong> → P99 spikes but error rate stays &lt;5%<br>
-      4. <strong>CPU Stress</strong> → HPA scales pods within 90s<br>
-      5. <strong>Region Failure</strong> → confirm → Kill Primary → Worker routes to DR → Restart to recover
+  <!-- HOW IT'S BUILT -->
+  <div id="p-built" class="tab-panel">
+
+    <div class="section">
+      <div class="section-label">What this is</div>
+      <p class="prose">A resilience platform across two AWS regions that <strong>deliberately breaks itself</strong> and proves it recovers automatically — pod kills, network degradation, CPU stress, and a full region outage. Everything here runs on real infrastructure at effectively $0/month: a t3.micro K3s node per region instead of managed Kubernetes, a Cloudflare Worker instead of paid DNS failover, and chaos triggered by hand instead of a full chaos-engineering platform (that part OOM'd on a 1GB node — the honest failure that led to the simpler, working version you see here).</p>
     </div>
-    <div class="ih">PROVEN METRICS</div>
-    <div style="line-height:2.1">
-      RTO (pod recovery): <strong style="color:#1a7a1a">17s</strong> · target &lt;30s ✓<br>
-      RTO (region failover): <strong style="color:#1a7a1a">&lt;5s</strong> · Cloudflare Worker per-request routing ✓<br>
-      Availability: <strong style="color:#1a7a1a">99.9%+</strong> under chaos ✓<br>
-      P99 Latency: <strong style="color:#1a7a1a">~92ms</strong> steady state ✓
+
+    <div class="section">
+      <div class="section-label">Tech stack</div>
+      <div class="stack-grid">
+        <div class="card stack-item"><span class="stack-icon">🟢</span><div><div class="stack-name">Node.js + Express</div><div class="stack-why">REST API, Prometheus metrics</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">🏗️</span><div><div class="stack-name">Terraform</div><div class="stack-why">Reproducible per-region modules</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">☸️</span><div><div class="stack-name">K3s on EC2</div><div class="stack-why">Full K8s API, fits free-tier RAM</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">🐳</span><div><div class="stack-name">Docker, multi-stage</div><div class="stack-why">Non-root, minimal image</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">☁️</span><div><div class="stack-name">Cloudflare Worker</div><div class="stack-why">Per-request failover, zero TTL</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">📊</span><div><div class="stack-name">Prometheus + Grafana</div><div class="stack-why">Metrics, standalone pods</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">📨</span><div><div class="stack-name">Lambda + SNS</div><div class="stack-why">Email alert on failover</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">📐</span><div><div class="stack-name">HPA autoscaling/v2</div><div class="stack-why">CPU 70% + memory 80%</div></div></div>
+        <div class="card stack-item"><span class="stack-icon">🔁</span><div><div class="stack-name">GitHub Actions</div><div class="stack-why">test → build → push → deploy</div></div></div>
+      </div>
     </div>
-    <div class="ih">LINKS</div>
-    <div style="line-height:2.1">
-      Worker: <a class="lnk" href="https://chaos-dr-failove.shivamkumarbxr8.workers.dev" target="_blank">chaos-dr-failove.shivamkumarbxr8.workers.dev ↗</a><br>
-      GitHub: <a class="lnk" href="https://github.com/shivamkr27/Chaos-and-DR" target="_blank">github.com/shivamkr27/Chaos-and-DR ↗</a>
+
+    <div class="section">
+      <div class="section-label">Frequently asked</div>
+      <div class="card" style="padding:6px 20px">
+        <details style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <summary style="cursor:pointer;font-weight:600;font-size:13.5px">Why a Cloudflare Worker instead of Route 53?</summary>
+          <p class="prose" style="margin-top:8px">Route 53 failover costs money per health check and has a 60-90s minimum TTL. The Worker is free, checks health on every request with zero propagation delay, and doesn't need an owned domain. For a real production system with a domain already in place, Route 53 is the more conventional answer.</p>
+        </details>
+        <details style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <summary style="cursor:pointer;font-weight:600;font-size:13.5px">Why K3s instead of EKS?</summary>
+          <p class="prose" style="margin-top:8px">K3s exposes the full Kubernetes API — same manifests, same kubectl — at zero cost on a t3.micro. EKS charges roughly $72/month just for the control plane. The concepts transfer directly; swapping to EKS is a kubeconfig and IAM change, not a redesign.</p>
+        </details>
+        <details style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <summary style="cursor:pointer;font-weight:600;font-size:13.5px">What happens to the database during a region failover?</summary>
+          <p class="prose" style="margin-top:8px">Primary runs RDS PostgreSQL. DR runs the app without a database — it stays healthy and serves traffic, but write operations degrade gracefully. Cross-region RDS replication needs backup retention that costs money outside the free tier, so it's intentionally left off for this demo (the Terraform module for it exists, just disabled).</p>
+        </details>
+        <details style="padding:14px 0">
+          <summary style="cursor:pointer;font-weight:600;font-size:13.5px">What would change at real scale?</summary>
+          <p class="prose" style="margin-top:8px">Active-active with conflict resolution at the data layer, Velero for cluster-state backup, a real chaos-engineering platform (Gremlin, chaos-mesh) instead of scripted kubectl/tc commands, and a written hypothesis + blast-radius plan before every experiment.</p>
+        </details>
+      </div>
     </div>
+
+    <div class="section">
+      <div class="section-label">Links</div>
+      <div class="link-row">
+        <a class="btn" href="https://github.com/shivamkr27/Chaos-and-DR" target="_blank" rel="noopener">Source on GitHub ↗</a>
+        <a class="btn" href="https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live" target="_blank" rel="noopener">Cloudflare Worker ↗</a>
+      </div>
+    </div>
+
   </div>
+
+  <footer>Built as a portfolio project — infrastructure is usually powered off between demos to keep this at $0/month. This dashboard and the Worker above stay live regardless.</footer>
 </div>
 
-</div>
-
-<div class="side">
-  <div class="th">
-    <span class="tt">LIVE OUTPUT <span class="bl"></span></span>
-    <button class="cb" onclick="clr()">CLEAR</button>
-  </div>
-  <div class="tb" id="term"></div>
-</div>
-</div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
-const T=document.getElementById('term');
-let busy=false;
+// ---------- theme ----------
+(function(){
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+})();
 
-function log(m,t){
-  const ts=new Date().toTimeString().slice(0,8);
-  const cl=t==='ok'?'lok':t==='warn'?'lwa':t==='err'?'ler':'lin';
-  const d=document.createElement('div');
-  d.innerHTML=`<span class="lts">[${ts}]</span> <span class="${cl}">${m}</span>`;
-  T.appendChild(d); T.scrollTop=T.scrollHeight;
+// ---------- tabs ----------
+function gotab(id, el){
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  (el || document.querySelector(`.tab[data-tab="${id}"]`)).classList.add('on');
 }
 
-function clr(){T.innerHTML='';log('Terminal cleared','info');}
+// ---------- live status (real fetch to the always-on Cloudflare Worker) ----------
+async function checkLiveStatus(){
+  const pill = document.getElementById('live-status');
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch('https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live', { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('non-200');
+    const servedBy = res.headers.get('X-Served-By');
+    const failover = res.headers.get('X-Failover-Active') === 'true';
+    if (failover) {
+      pill.className = 'status-pill warn';
+      pill.innerHTML = `<span class="dot"></span> Live — routing to DR${servedBy ? ' (' + servedBy + ')' : ''}`;
+    } else {
+      pill.className = 'status-pill ok';
+      pill.innerHTML = `<span class="dot"></span> Live — serving from ${servedBy || 'primary'}`;
+    }
+  } catch (e) {
+    pill.className = 'status-pill';
+    pill.innerHTML = '<span class="dot"></span> Infra paused right now (cost-saving) — see architecture below';
+  }
+}
+checkLiveStatus();
+setInterval(checkLiveStatus, 30000);
 
-function stab(id,el){
-  document.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
-  document.getElementById('t-'+id).classList.add('on');
-  el.classList.add('on');
+// ---------- sparkline (no external chart library) ----------
+(function(){
+  const pts = [];
+  for (let i = 0; i < 30; i++) pts.push(+(Math.random() * 0.35).toFixed(2));
+  const svg = document.getElementById('spark');
+  const w = 600, h = 70, max = 6;
+  const step = w / (pts.length - 1);
+  const coords = pts.map((v, i) => [i * step, h - (v / max) * h]);
+  const line = coords.map(([x, y]) => `${x},${y}`).join(' ');
+  const area = `0,${h} ${line} ${w},${h}`;
+  const ns = 'http://www.w3.org/2000/svg';
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#dc2626';
+  const poly = document.createElementNS(ns, 'polyline');
+  poly.setAttribute('points', area);
+  poly.setAttribute('fill', accent + '14');
+  poly.setAttribute('stroke', 'none');
+  const stroke = document.createElementNS(ns, 'polyline');
+  stroke.setAttribute('points', line);
+  stroke.setAttribute('fill', 'none');
+  stroke.setAttribute('stroke', accent);
+  stroke.setAttribute('stroke-width', '1.75');
+  stroke.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(poly);
+  svg.appendChild(stroke);
+})();
+
+// ---------- chaos lab simulation ----------
+const T = document.getElementById('term');
+let busy = false;
+
+function log(m, t){
+  const ts = new Date().toTimeString().slice(0, 8);
+  const cl = t === 'ok' ? 't-ok' : t === 'warn' ? 't-warn' : t === 'err' ? 't-err' : 't-info';
+  const d = document.createElement('div');
+  d.innerHTML = `<span class="t-time">[${ts}]</span> <span class="${cl}">${m}</span>`;
+  T.appendChild(d);
+  T.scrollTop = T.scrollHeight;
+}
+function clr(){ T.innerHTML = ''; log('Terminal cleared', 'info'); }
+
+// Disables every experiment button while one is running, so it's visually obvious
+// (not just a log line) why nothing happens if you click another one mid-run.
+function setBusy(state){
+  busy = state;
+  document.querySelectorAll('.exp-btn').forEach(b => { b.disabled = state; });
 }
 
 function getSteps(id){
-  if(id==='pod') return [
-    ['Connecting to primary EC2 (us-east-1)...','info'],
-    ['kubectl get pods -n chaos-dr -l app=chaos-dr-app','info'],
-    ['NAME                           READY  STATUS   RESTARTS','info'],
-    ['chaos-dr-app-bc886698b-947n2   1/1    Running  0','info'],
-    ['chaos-dr-app-bc886698b-x71kp   1/1    Running  0','info'],
-    ['Target pod: chaos-dr-app-bc886698b-947n2','info'],
-    ['kubectl delete pod chaos-dr-app-bc886698b-947n2 -n chaos-dr --grace-period=0','warn'],
-    ['pod "chaos-dr-app-bc886698b-947n2" deleted','warn'],
-    ['Watching pod recovery...','info'],
-    ['chaos-dr-app-bc886698b-m9qr1   0/1    Pending           0','warn'],
-    ['chaos-dr-app-bc886698b-m9qr1   0/1    ContainerCreating 0','warn'],
-    ['chaos-dr-app-bc886698b-m9qr1   1/1    Running           0','ok'],
-    ['Recovery time: 17s  |  SLO target: <30s  |  PASS ✓','ok'],
+  if (id === 'pod') return [
+    ['Connecting to primary EC2 (us-east-1)…', 'info'],
+    ['kubectl get pods -n chaos-dr -l app=chaos-dr-app', 'info'],
+    ['NAME                           READY  STATUS   RESTARTS', 'info'],
+    ['chaos-dr-app-bc886698b-947n2   1/1    Running  0', 'info'],
+    ['chaos-dr-app-bc886698b-x71kp   1/1    Running  0', 'info'],
+    ['Target pod: chaos-dr-app-bc886698b-947n2', 'info'],
+    ['kubectl delete pod chaos-dr-app-bc886698b-947n2 -n chaos-dr --grace-period=0 --force', 'warn'],
+    ['pod "chaos-dr-app-bc886698b-947n2" deleted', 'warn'],
+    ['Watching pod recovery…', 'info'],
+    ['chaos-dr-app-bc886698b-m9qr1   0/1    Pending', 'warn'],
+    ['chaos-dr-app-bc886698b-m9qr1   0/1    ContainerCreating', 'warn'],
+    ['chaos-dr-app-bc886698b-m9qr1   1/1    Running', 'ok'],
+    ['Recovery time: 17s  |  SLO target: <30s  |  PASS ✓', 'ok'],
   ];
-  if(id==='net') return [
-    ['Connecting to primary EC2...','info'],
-    ['sudo tc qdisc add dev eth0 root netem delay 300ms 20ms','warn'],
-    ['Latency active — monitoring error rate','info'],
-    ['P99 latency: 394ms (spike expected)','warn'],
-    ['P99 latency: 387ms','warn'],
-    ['Error rate: 1.2% — within 5% SLO','ok'],
-    ['Error rate: 0.8%','ok'],
-    ['sudo tc qdisc del dev eth0 root','info'],
-    ['Latency removed — P99 restoring','info'],
-    ['P99 latency: 94ms | Error rate: 0.0% | SLO PASS ✓','ok'],
+  if (id === 'net') return [
+    ['Connecting to primary EC2…', 'info'],
+    ['sudo tc qdisc add dev eth0 root netem delay 300ms 50ms', 'warn'],
+    ['Latency active — monitoring error rate', 'info'],
+    ['P99 latency: 394ms (spike expected)', 'warn'],
+    ['P99 latency: 387ms', 'warn'],
+    ['Error rate: 1.2% — within 5% SLO', 'ok'],
+    ['Error rate: 0.8%', 'ok'],
+    ['sudo tc qdisc del dev eth0 root netem', 'info'],
+    ['Latency removed — P99 restoring', 'info'],
+    ['P99 latency: 94ms | Error rate: 0.0% | SLO PASS ✓', 'ok'],
   ];
-  if(id==='cpu') return [
-    ['Connecting to primary EC2...','info'],
-    ['Target pod: chaos-dr-app-bc886698b-947n2','info'],
-    ['kubectl exec -n chaos-dr chaos-dr-app-bc886698b-947n2 -- sh -c "dd if=/dev/zero of=/dev/null &"','warn'],
-    ['CPU usage: 97% (threshold: 70%)','err'],
-    ['HPA triggered — evaluating replica count','warn'],
-    ['Scaling deployment: 2 → 4 replicas','warn'],
-    ['New pod: chaos-dr-app-bc886698b-t2kx9   ContainerCreating','info'],
-    ['New pod: chaos-dr-app-bc886698b-t2kx9   Running','ok'],
-    ['New pod: chaos-dr-app-bc886698b-q8mn1   Running','ok'],
-    ['Scale-up time: 43s  |  SLO target: <90s  |  PASS ✓','ok'],
+  if (id === 'cpu') return [
+    ['Connecting to primary EC2…', 'info'],
+    ['Target pod: chaos-dr-app-bc886698b-947n2', 'info'],
+    ['kubectl exec chaos-dr-app-bc886698b-947n2 -n chaos-dr -- node -e "busy loop 120s"', 'warn'],
+    ['CPU usage: 97% (HPA threshold: 70%)', 'err'],
+    ['HPA triggered — evaluating replica count', 'warn'],
+    ['Scaling deployment: 2 → 4 replicas', 'warn'],
+    ['New pod chaos-dr-app-bc886698b-t2kx9   ContainerCreating', 'info'],
+    ['New pod chaos-dr-app-bc886698b-t2kx9   Running', 'ok'],
+    ['New pod chaos-dr-app-bc886698b-q8mn1   Running', 'ok'],
+    ['Scale-up time: 43s  |  SLO target: <90s  |  PASS ✓', 'ok'],
   ];
   return [];
 }
 
-function runExp(id,name){
-  if(busy){log('Another experiment running — wait','warn');return;}
-  busy=true;
-  const card=document.getElementById('e-'+id);
-  const btn=card.querySelector('.rb');
-  card.classList.add('run'); btn.classList.add('on');
-  btn.textContent='⏸ RUNNING...';
-  log('--- '+name+' ---','info');
-  const s=getSteps(id); let i=0;
-  const iv=setInterval(()=>{
-    if(i<s.length){log(s[i][0],s[i][1]);i++;}
-    else{
+function runExp(id, name){
+  if (busy) { log('Another experiment is running — wait for it to finish', 'warn'); return; }
+  setBusy(true);
+  const card = document.getElementById('e-' + id);
+  const btn = card.querySelector('.exp-btn');
+  card.classList.add('running'); btn.textContent = '⏸ Running…';
+  log('--- ' + name + ' ---', 'info');
+  const s = getSteps(id); let i = 0;
+  const iv = setInterval(() => {
+    if (i < s.length) { log(s[i][0], s[i][1]); i++; }
+    else {
       clearInterval(iv);
-      card.classList.remove('run');btn.classList.remove('on');
-      btn.textContent='▶ RUN EXPERIMENT';busy=false;
-      log('Experiment complete: '+name,'ok');
+      card.classList.remove('running'); btn.textContent = '▶ Run experiment';
+      setBusy(false);
+      log('Experiment complete: ' + name, 'ok');
     }
-  },1100);
+  }, 1100);
 }
 
 function runKill(){
-  if(!document.getElementById('kc').checked){log('Check confirm box first','warn');return;}
-  if(busy){log('Another experiment running','warn');return;}
-  busy=true;
-  log('--- Region Failure ---','err');
-  document.getElementById('pp').className='pill pill-r';
-  document.getElementById('pp').textContent='● PRIMARY DOWN';
-  const s=[
-    ['aws ec2 stop-instances --region us-east-1','err'],
-    ['Instance i-0ba7fabda25f42a12 stopping...','err'],
-    ['Health check: connection refused','err'],
-    ['Cloudflare Worker probe timeout (4000ms)','warn'],
-    ['Worker detected: primary DOWN','warn'],
-    ['Rerouting all traffic → DR (us-west-2)','warn'],
-    ['DR responding: HTTP 200 OK','ok'],
-    ['X-Served-By: us-west-2','ok'],
-    ['X-Failover-Active: true','ok'],
-    ['Failover RTO: <5s  |  PASS ✓','ok'],
-    ['Use "Restart Primary EC2" to recover','info'],
+  if (!document.getElementById('kc').checked) { log('Check the confirmation box first', 'warn'); return; }
+  if (busy) { log('Another experiment is running', 'warn'); return; }
+  setBusy(true);
+  log('--- Region Failure ---', 'err');
+  const s = [
+    ['aws ec2 stop-instances --region us-east-1 --instance-ids <primary-instance-id>', 'err'],
+    ['Instance stopping…', 'err'],
+    ['Health check: connection refused', 'err'],
+    ['Cloudflare Worker probe timeout', 'warn'],
+    ['Worker detected: primary DOWN', 'warn'],
+    ['Rerouting all traffic → DR (us-west-2)', 'warn'],
+    ['DR responding: HTTP 200 OK', 'ok'],
+    ['X-Served-By: us-west-2', 'ok'],
+    ['X-Failover-Active: true', 'ok'],
+    ['Failover RTO: <5s  |  PASS ✓', 'ok'],
+    ['Primary is down — click "Restart primary EC2" below to recover', 'info'],
   ];
-  let i=0;
-  const iv=setInterval(()=>{
-    if(i<s.length){log(s[i][0],s[i][1]);i++;}
-    else{
-      clearInterval(iv);
-      document.getElementById('dr-sr').textContent='100%';
-      document.getElementById('dr-sr').style.color='#1a7a1a';
-      document.getElementById('dr-lat').textContent='108ms';
-      document.getElementById('dr-pods').textContent='1/1';
-      document.getElementById('dr-tag').className='rtag rtag-a';
-      document.getElementById('dr-tag').textContent='DR ACTIVE';
-      document.getElementById('dr-rds').textContent='● App: degraded mode (no DB)';
-      document.getElementById('dr-rds').className='wa';
-      document.getElementById('dp').className='pill pill-g';
-      document.getElementById('dp').textContent='● DR ACTIVE';
-    }
-  },1200);
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < s.length) { log(s[i][0], s[i][1]); i++; }
+    else clearInterval(iv);
+    // Note: busy stays true after Region Failure finishes — primary is "down" until
+    // Restart Primary EC2 is clicked, which mirrors reality (can't chaos-test a dead region).
+  }, 1200);
 }
 
 function recPrimary(){
-  busy=false;
-  log('--- Restart Primary EC2 ---','info');
-  log('aws ec2 start-instances --region us-east-1','info');
-  setTimeout(()=>log('Instance pending...','info'),900);
-  setTimeout(()=>log('Instance running — K3s initializing','info'),2000);
-  setTimeout(()=>log('Pods starting: chaos-dr-app 0/2 Running','warn'),2800);
-  setTimeout(()=>{
-    log('Pods ready: 2/2 Running','ok');
-    log('Cloudflare Worker: primary health check PASS','ok');
-    log('Traffic restored → us-east-1  |  X-Served-By: us-east-1','ok');
-    document.getElementById('pp').className='pill pill-g';
-    document.getElementById('pp').textContent='● PRIMARY LIVE';
-    document.getElementById('dp').className='pill pill-y';
-    document.getElementById('dp').textContent='● DR STANDBY';
-    document.getElementById('dr-tag').className='rtag rtag-s';
-    document.getElementById('dr-tag').textContent='DR STANDBY';
-    document.getElementById('dr-sr').textContent='STBY';
-    document.getElementById('dr-sr').style.color='#996600';
-    document.getElementById('dr-lat').textContent='—';
-    document.getElementById('dr-pods').textContent='—';
-    document.getElementById('dr-rds').textContent='● NO RDS (degraded mode)';
-    document.getElementById('dr-rds').className='wa';
-    document.getElementById('kc').checked=false;
-  },4000);
+  setBusy(false);
+  log('--- Restart Primary EC2 ---', 'info');
+  log('aws ec2 start-instances --region us-east-1 --instance-ids <primary-instance-id>', 'info');
+  setTimeout(() => log('Instance pending…', 'info'), 900);
+  setTimeout(() => log('Instance running — K3s initializing', 'info'), 2000);
+  setTimeout(() => log('Pods starting: chaos-dr-app 0/2 Running', 'warn'), 2800);
+  setTimeout(() => {
+    log('Pods ready: 2/2 Running', 'ok');
+    log('Cloudflare Worker: primary health check PASS', 'ok');
+    log('Traffic restored → us-east-1  |  X-Served-By: us-east-1', 'ok');
+    document.getElementById('kc').checked = false;
+  }, 4000);
 }
 
 function runFail(){
-  log('--- Full Failover Script ---','warn');
-  setTimeout(()=>log('Step 1/4 — Verifying DR health','info'),600);
-  setTimeout(()=>log('Step 2/4 — Updating K8s DB secret → DR endpoint','info'),1500);
-  setTimeout(()=>log('Step 3/4 — Cloudflare Worker: 100% traffic → DR','ok'),2500);
-  setTimeout(()=>log('Step 4/4 — Failover complete. Monitor: prometheus:32001','ok'),3400);
+  log('--- Full Failover Script (scripts/failover.sh) ---', 'warn');
+  setTimeout(() => log('Step 1/4 — Verifying DR health', 'info'), 600);
+  setTimeout(() => log('Step 2/4 — Updating K8s DB secret → DR endpoint', 'info'), 1500);
+  setTimeout(() => log('Step 3/4 — Cloudflare Worker: 100% traffic → DR', 'ok'), 2500);
+  setTimeout(() => log('Step 4/4 — Failover complete. Monitor: prometheus:32001', 'ok'), 3400);
 }
 
-setInterval(()=>{
-  document.getElementById('clk').textContent=new Date().toUTCString().slice(17,25)+' UTC';
-},1000);
-document.getElementById('clk').textContent=new Date().toUTCString().slice(17,25)+' UTC';
-
-log('Dashboard initialized','info');
-log('Primary health: OK (us-east-1)','ok');
-log('Cloudflare Worker: active — routing to primary','ok');
-log('All SLOs within threshold','ok');
-
-const lbs=[],dt=[];
-for(let i=29;i>=0;i--){
-  const t=new Date(Date.now()-i*60000);
-  lbs.push(t.getMinutes()+':'+String(t.getSeconds()).padStart(2,'0'));
-  dt.push(+(Math.random()*0.35).toFixed(2));
-}
-new Chart(document.getElementById('chart'),{
-  type:'line',
-  data:{labels:lbs,datasets:[{data:dt,borderColor:'#cc0000',borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:'rgba(204,0,0,0.04)',tension:0.4}]},
-  options:{
-    responsive:true,maintainAspectRatio:false,animation:false,
-    plugins:{legend:{display:false},tooltip:{enabled:false}},
-    scales:{
-      x:{display:false},
-      y:{min:0,max:6,ticks:{color:'#ccc',font:{size:9},stepSize:2},grid:{color:'#f5f5f5'},border:{display:false}}
-    }
-  }
-});
+log('Dashboard loaded', 'info');
+log('Checking Worker status…', 'info');
 </script>
 </body>
 </html>

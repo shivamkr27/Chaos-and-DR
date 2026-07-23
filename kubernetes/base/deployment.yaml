@@ -17,11 +17,20 @@ spec:
     spec:
       terminationGracePeriodSeconds: 30   # matches SIGTERM handler in app
 
+      securityContext:
+        runAsNonRoot: true
+
       containers:
         - name: app
           image: PLACEHOLDER_IMAGE   # replaced per-region via kustomize overlay
           ports:
             - containerPort: 3000
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
 
           env:
             - name: PORT
@@ -42,8 +51,17 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: DB_PASSWORD
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: API_KEY
             - name: AWS_REGION
               value: "PLACEHOLDER_REGION"
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
 
           # Liveness — if this fails, pod is restarted
           livenessProbe:
@@ -70,6 +88,10 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
 
       # Spread pods across nodes to survive single-node failures
       topologySpreadConstraints:

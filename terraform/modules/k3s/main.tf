@@ -99,6 +99,7 @@ resource "aws_instance" "k3s" {
     project     = var.project
     db_host     = var.db_host
     db_password = var.db_password
+    api_key     = var.api_key
     app_image   = var.app_image
   })
 

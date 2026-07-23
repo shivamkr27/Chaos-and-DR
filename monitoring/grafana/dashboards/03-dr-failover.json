@@ -4,48 +4,69 @@
   "schemaVersion": 38,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
-  "annotations": {
-    "list": [
-      {
-        "name": "Failover Events",
-        "datasource": { "type": "prometheus" },
-        "expr": "ALERTS{alertname='HighErrorRate', severity='critical'}",
-        "titleFormat": "FAILOVER TRIGGERED",
-        "iconColor": "dark-red",
-        "enable": true
-      },
-      {
-        "name": "Primary Recovery",
-        "datasource": { "type": "prometheus" },
-        "expr": "ALERTS{alertname='AppDown', alertstate='resolved'}",
-        "titleFormat": "Primary Recovered",
-        "iconColor": "green",
-        "enable": true
-      }
-    ]
-  },
   "panels": [
+    {
+      "id": 0,
+      "type": "text",
+      "title": "About this dashboard",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 3 },
+      "options": {
+        "mode": "markdown",
+        "content": "This region's Prometheus/Grafana run independently with no cross-region federation, so a real primary-vs-DR side-by-side view isn't possible from here — open each region's own Grafana to compare. Regional failover itself is verified via the Cloudflare Worker response headers, not Prometheus: `curl -sI https://chaos-dr-failove.shivamkumarbxr8.workers.dev/health/live` and check `X-Served-By` / `X-Failover-Active` (see README § Chaos Experiments)."
+      }
+    },
     {
       "id": 1,
       "type": "stat",
-      "title": "Active Region",
-      "description": "Which region is currently serving traffic",
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "title": "App Up (this region)",
+      "gridPos": { "x": 0, "y": 3, "w": 8, "h": 4 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background"
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "green", "value": 1 }
+          ]
+        },
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }
+        ]
       },
       "targets": [{
-        "expr": "label_replace(up{job='chaos-dr-app'}, 'region', '$1', 'instance', '.*:(.*)')",
-        "legendFormat": "{{region}}"
+        "expr": "min(up{job='chaos-dr-app'})",
+        "legendFormat": "Up"
       }]
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "Replication Lag",
-      "description": "How far behind DR database is from primary. SLO: < 5 seconds",
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "title": "Success Rate (this region)",
+      "gridPos": { "x": 8, "y": 3, "w": 8, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red",   "value": null },
+            { "color": "yellow","value": 0.99 },
+            { "color": "green", "value": 0.995 }
+          ]
+        },
+        "unit": "percentunit"
+      },
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{status=~'2..'}[5m])) / sum(rate(http_requests_total[5m]))",
+        "legendFormat": "Success Rate"
+      }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "P99 Latency (this region)",
+      "gridPos": { "x": 16, "y": 3, "w": 8, "h": 4 },
       "options": {
         "reduceOptions": { "calcs": ["lastNotNull"] },
         "colorMode": "background",
@@ -53,94 +74,23 @@
           "mode": "absolute",
           "steps": [
             { "color": "green",  "value": null },
-            { "color": "yellow", "value": 1 },
-            { "color": "red",    "value": 5 }
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red",    "value": 2 }
           ]
         },
         "unit": "s"
       },
       "targets": [{
-        "expr": "pg_replication_lag_seconds",
-        "legendFormat": "Lag"
-      }]
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Route53 Health — Primary",
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background",
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            { "color": "red",   "value": null },
-            { "color": "green", "value": 1 }
-          ]
-        },
-        "mappings": [
-          { "type": "value", "options": { "0": { "text": "UNHEALTHY" }, "1": { "text": "HEALTHY" } } }
-        ]
-      },
-      "targets": [{
-        "expr": "aws_route53_health_check_status_minimum{region='us-east-1'}",
-        "legendFormat": "Primary"
+        "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+        "legendFormat": "P99"
       }]
     },
     {
       "id": 4,
-      "type": "stat",
-      "title": "Route53 Health — DR",
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background",
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            { "color": "red",   "value": null },
-            { "color": "green", "value": 1 }
-          ]
-        },
-        "mappings": [
-          { "type": "value", "options": { "0": { "text": "UNHEALTHY" }, "1": { "text": "HEALTHY" } } }
-        ]
-      },
-      "targets": [{
-        "expr": "aws_route53_health_check_status_minimum{region='us-west-2'}",
-        "legendFormat": "DR"
-      }]
-    },
-    {
-      "id": 5,
       "type": "timeseries",
-      "title": "Replication Lag Over Time (SLO: RPO < 5s)",
-      "description": "Spikes here = data at risk if primary fails. Should be near 0 at rest.",
-      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
-      },
-      "targets": [
-        {
-          "expr": "pg_replication_lag_seconds",
-          "legendFormat": "Replication Lag"
-        },
-        {
-          "expr": "vector(5)",
-          "legendFormat": "SLO Threshold (5s)"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Request Success Rate — Primary vs DR (RTO: < 2min)",
-      "description": "During region-failure experiment: primary drops to 0, DR takes over. Gap = RTO.",
-      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "title": "Request Success Rate Over Time (this region)",
+      "description": "During a region-failure experiment, this drops to 0 when the local EC2 is stopped — RTO is measured externally via the Worker's X-Served-By header, not here.",
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 8 },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -151,41 +101,12 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{status=~'2..', region='us-east-1'}[1m])) / sum(rate(http_requests_total{region='us-east-1'}[1m]))",
-          "legendFormat": "Primary (us-east-1)"
-        },
-        {
-          "expr": "sum(rate(http_requests_total{status=~'2..', region='us-west-2'}[1m])) / sum(rate(http_requests_total{region='us-west-2'}[1m]))",
-          "legendFormat": "DR (us-west-2)"
+          "expr": "sum(rate(http_requests_total{status=~'2..'}[1m])) / sum(rate(http_requests_total[1m]))",
+          "legendFormat": "Success Rate"
         },
         {
           "expr": "vector(0.995)",
           "legendFormat": "SLO (99.5%)"
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "type": "timeseries",
-      "title": "EC2 Instance Status (1=running, 0=stopped)",
-      "description": "During region-failure experiment: primary drops to 0. Watch time until DR takes full load.",
-      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 7 },
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "lineWidth": 2 },
-          "mappings": [
-            { "type": "value", "options": { "0": { "text": "STOPPED" }, "1": { "text": "RUNNING" } } }
-          ]
-        }
-      },
-      "targets": [
-        {
-          "expr": "aws_ec2_instance_status_check_failed_system_maximum{region='us-east-1'} == 0",
-          "legendFormat": "Primary EC2 healthy"
-        },
-        {
-          "expr": "aws_ec2_instance_status_check_failed_system_maximum{region='us-west-2'} == 0",
-          "legendFormat": "DR EC2 healthy"
         }
       ]
     }

@@ -1,3 +1,5 @@
+process.env.API_KEY = 'test-key';
+
 const request = require('supertest');
 const app = require('../index');
 
@@ -58,34 +60,63 @@ describe('POST /api/items', () => {
     pool.query.mockResolvedValueOnce({ rows: [mockItem], rowCount: 1 });
     const res = await request(app)
       .post('/api/items')
+      .set('x-api-key', 'test-key')
       .send({ name: 'Test Item', description: 'A desc' });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('Test Item');
   });
 
+  it('returns 401 without a valid x-api-key header', async () => {
+    const res = await request(app).post('/api/items').send({ name: 'Test Item' });
+    expect(res.status).toBe(401);
+  });
+
   it('returns 400 when name is missing', async () => {
-    const res = await request(app).post('/api/items').send({ description: 'no name' });
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ description: 'no name' });
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when name is empty string', async () => {
-    const res = await request(app).post('/api/items').send({ name: '   ' });
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ name: '   ' });
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when name exceeds 255 chars', async () => {
-    const res = await request(app).post('/api/items').send({ name: 'a'.repeat(256) });
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ name: 'a'.repeat(256) });
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when name is not a string', async () => {
-    const res = await request(app).post('/api/items').send({ name: 123 });
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ name: 123 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when description is not a string', async () => {
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ name: 'Test Item', description: 12345 });
     expect(res.status).toBe(400);
   });
 
   it('trims whitespace from name', async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ ...mockItem, name: 'Trimmed' }], rowCount: 1 });
-    const res = await request(app).post('/api/items').send({ name: '  Trimmed  ' });
+    const res = await request(app)
+      .post('/api/items')
+      .set('x-api-key', 'test-key')
+      .send({ name: '  Trimmed  ' });
     expect(res.status).toBe(201);
     const [, args] = pool.query.mock.calls[pool.query.mock.calls.length - 1];
     expect(args[0]).toBe('Trimmed');
@@ -95,19 +126,24 @@ describe('POST /api/items', () => {
 describe('DELETE /api/items/:id', () => {
   it('deletes an item', async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 });
-    const res = await request(app).delete('/api/items/1');
+    const res = await request(app).delete('/api/items/1').set('x-api-key', 'test-key');
     expect(res.status).toBe(200);
     expect(res.body.deleted).toBe(true);
   });
 
+  it('returns 401 without a valid x-api-key header', async () => {
+    const res = await request(app).delete('/api/items/1');
+    expect(res.status).toBe(401);
+  });
+
   it('returns 404 when item does not exist', async () => {
     pool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-    const res = await request(app).delete('/api/items/999');
+    const res = await request(app).delete('/api/items/999').set('x-api-key', 'test-key');
     expect(res.status).toBe(404);
   });
 
   it('returns 400 for non-numeric id', async () => {
-    const res = await request(app).delete('/api/items/xyz');
+    const res = await request(app).delete('/api/items/xyz').set('x-api-key', 'test-key');
     expect(res.status).toBe(400);
   });
 });

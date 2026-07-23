@@ -35,3 +35,16 @@ patches:
     target:
       kind: Deployment
       name: chaos-dr-app
+
+  # DR is a fixed-size standby (replicas: 1 above) — the base HPA (minReplicas: 2)
+  # would otherwise fight that patch back up to 2. Drop it from this overlay entirely.
+  - patch: |-
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: chaos-dr-app
+        namespace: chaos-dr
+      $patch: delete
+    target:
+      kind: HorizontalPodAutoscaler
+      name: chaos-dr-app

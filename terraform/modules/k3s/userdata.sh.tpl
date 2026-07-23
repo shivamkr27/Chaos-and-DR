@@ -47,13 +47,17 @@ kubectl label node "$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
   app.kubernetes.io/managed-by=terraform \
   --overwrite
 
-# Create app namespace and DB secret — app pods need these when deployed later
+# Create app namespace and DB secret — app pods need these when deployed later.
+# set +x here: DB_PASSWORD/API_KEY must not be written to /var/log/k3s-bootstrap.log by the trace.
+set +x
 kubectl create namespace chaos-dr --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic db-credentials \
   --namespace chaos-dr \
   --from-literal=DB_HOST="${db_host}" \
   --from-literal=DB_PASSWORD="${db_password}" \
+  --from-literal=API_KEY="${api_key}" \
   --dry-run=client -o yaml | kubectl apply -f -
+set -x
 
 echo "=== Bootstrap COMPLETE at $(date) ==="
 echo "Next: run scripts/deploy-app.sh and scripts/install-monitoring.sh from your local machine"

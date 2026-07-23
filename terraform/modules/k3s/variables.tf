@@ -35,13 +35,18 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "api_key" {
+  description = "Shared API key for the app's mutating endpoints, passed to K3s bootstrap"
+  type        = string
+  sensitive   = true
+}
+
 variable "app_image" {
   description = "Docker image for the app (ECR or Docker Hub)"
   type        = string
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR allowed SSH access to K3s node. Restrict to your IP in production (e.g. 1.2.3.4/32)."
+  description = "CIDR allowed SSH access to K3s node. Restrict to your IP (e.g. 1.2.3.4/32)."
   type        = string
-  default     = "0.0.0.0/0"
 }

@@ -2,9 +2,11 @@ name = "chaos-dr-failove"
 main = "failover.js"
 compatibility_date = "2024-01-01"
 
-# Set these as Worker secrets via Cloudflare dashboard → Workers → Settings → Variables
-# LAMBDA_URL  = "https://<id>.lambda-url.us-east-1.on.aws/"
-# ALERT_SECRET = "<random-string>"
+# ALERT_SECRET must NOT go here — [vars] is deployed in plaintext and committed to git,
+# which defeats the shared-secret check in scripts/lambda-alert/index.js entirely.
+# Set it as an encrypted Worker secret instead (not committed anywhere):
+#   wrangler secret put ALERT_SECRET
+# Then update the Lambda's matching `alert_secret` Terraform var (scripts/lambda-alert/lambda.tf)
+# to the same value and redeploy the Lambda.
 [vars]
-LAMBDA_URL   = "https://2jppbsn7aihb4o6epu2hhbptvi0ppinf.lambda-url.us-east-1.on.aws/"
-ALERT_SECRET ="chaos-dr-secret-2024"
+LAMBDA_URL = "https://2jppbsn7aihb4o6epu2hhbptvi0ppinf.lambda-url.us-east-1.on.aws/"

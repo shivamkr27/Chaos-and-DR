@@ -18,10 +18,10 @@ router.get('/ready', async (req, res) => {
       region: process.env.AWS_REGION || 'local',
     });
   } catch (err) {
+    console.error('Readiness check failed:', err.message);
     res.status(503).json({
       status: 'degraded',
       db: 'unreachable',
-      error: err.message,
       timestamp: new Date().toISOString(),
     });
   }

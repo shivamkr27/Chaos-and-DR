@@ -1,10 +1,9 @@
-# Fill after region-primary is applied first
-# primary_db_instance_arn comes from: cd terraform/region-primary && terraform output
+# Apply after region-primary
 
-project                 = "chaos-dr"
-aws_region              = "us-west-2"
-db_password             = "CHANGE_ME_same_as_primary"
-ssh_public_key          = "ssh-rsa AAAA... same key as primary"
-app_image               = "your-dockerhub-username/chaos-dr-app:latest"
-primary_db_instance_arn = "arn:aws:rds:us-east-1:ACCOUNT_ID:db:chaos-dr-primary-postgres"
-allowed_ssh_cidr        = "0.0.0.0/0"   # restrict to your IP in production: "1.2.3.4/32"
+project          = "chaos-dr"
+aws_region       = "us-west-2"
+db_password      = "CHANGE_ME_same_as_primary"
+api_key          = "CHANGE_ME_same_as_primary"
+ssh_public_key   = "ssh-rsa AAAA... same key as primary"
+app_image        = "your-dockerhub-username/chaos-dr-app:latest"
+allowed_ssh_cidr = "1.2.3.4/32"   # REQUIRED — your IP only, no default (was 0.0.0.0/0)

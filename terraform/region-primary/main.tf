@@ -25,6 +25,7 @@ module "k3s" {
   ssh_public_key   = var.ssh_public_key
   db_host          = module.rds.endpoint
   db_password      = var.db_password
+  api_key          = var.api_key
   app_image        = var.app_image
   allowed_ssh_cidr = var.allowed_ssh_cidr
 }

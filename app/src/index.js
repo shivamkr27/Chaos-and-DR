@@ -1,13 +1,17 @@
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { initDb, pool } = require('./db');
 const healthRoutes = require('./routes/health');
 const itemsRoutes = require('./routes/items');
 const { registry, metricsMiddleware, updatePoolMetrics } = require('./metrics');
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3000');
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
+app.use(helmet());
+app.use(rateLimit({ windowMs: 60 * 1000, limit: 120 }));
 app.use(express.json());
 app.use(metricsMiddleware);
 
@@ -59,7 +63,7 @@ async function start() {
   }
 
   // Refresh DB pool metrics every 15s
-  setInterval(() => updatePoolMetrics(pool), 15000);
+  const metricsInterval = setInterval(() => updatePoolMetrics(pool), 15000);
 
   const server = app.listen(PORT, () => {
     console.log(`chaos-dr-app running on port ${PORT} | region: ${process.env.AWS_REGION || 'local'}`);
@@ -67,7 +71,10 @@ async function start() {
 
   const shutdown = (signal) => {
     console.log(`${signal} received, shutting down gracefully`);
-    server.close(() => process.exit(0));
+    clearInterval(metricsInterval);
+    server.close(() => {
+      pool.end().finally(() => process.exit(0));
+    });
     setTimeout(() => process.exit(1), 10000);
   };
 

@@ -66,10 +66,6 @@ data:
             target_label: pod
           - source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
-
-      - job_name: node-exporter
-        static_configs:
-          - targets: ["node-exporter.monitoring.svc.cluster.local:9100"]
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -3,17 +3,17 @@
 # Run this AFTER `terraform apply` finishes and the EC2 is up.
 #
 # Usage:
-#   ./scripts/deploy-app.sh primary <ec2-ip> <db-host>
-#   ./scripts/deploy-app.sh dr      <ec2-ip> <db-host>
+#   DB_PASSWORD=... API_KEY=... ./scripts/deploy-app.sh primary <ec2-ip> <db-host>
+#   DB_PASSWORD=... API_KEY=... ./scripts/deploy-app.sh dr      <ec2-ip> <db-host>
 #
 # Example — get IPs from terraform output first:
 #   PRIMARY_IP=$(cd terraform/region-primary && terraform output -raw k3s_public_ip)
 #   PRIMARY_DB=$(cd terraform/region-primary && terraform output -raw rds_endpoint)
-#   ./scripts/deploy-app.sh primary "$PRIMARY_IP" "$PRIMARY_DB"
+#   DB_PASSWORD=... API_KEY=... ./scripts/deploy-app.sh primary "$PRIMARY_IP" "$PRIMARY_DB"
 #
 #   DR_IP=$(cd terraform/region-dr && terraform output -raw k3s_public_ip)
 #   DR_DB=$(cd terraform/region-dr && terraform output -raw rds_replica_endpoint)
-#   ./scripts/deploy-app.sh dr "$DR_IP" "$DR_DB"
+#   DB_PASSWORD=... API_KEY=... ./scripts/deploy-app.sh dr "$DR_IP" "$DR_DB"
 
 set -euo pipefail
 
@@ -21,7 +21,8 @@ ROLE="${1:?Usage: $0 <primary|dr> <ec2-ip> <db-host>}"
 EC2_IP="${2:?EC2 IP required}"
 DB_HOST="${3:?DB host (RDS endpoint) required}"
 
-DB_PASSWORD="${DB_PASSWORD:-ChaosD3v#2024!}"
+DB_PASSWORD="${DB_PASSWORD:?DB_PASSWORD env var required}"
+API_KEY="${API_KEY:?API_KEY env var required (shared secret for POST/DELETE on /api/items)}"
 APP_IMAGE="${APP_IMAGE:-shivam272727/chaos-dr-app:latest}"
 SSH_KEY="${SSH_KEY:-${HOME}/.ssh/chaos-dr}"
 
@@ -49,6 +50,7 @@ kubectl create namespace chaos-dr --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic db-credentials --namespace chaos-dr \
   --from-literal=DB_HOST='${DB_HOST}' \
   --from-literal=DB_PASSWORD='${DB_PASSWORD}' \
+  --from-literal=API_KEY='${API_KEY}' \
   --dry-run=client -o yaml | kubectl apply -f -"
 
 echo "[2/3] Applying Deployment, Service, HPA..."
@@ -72,11 +74,18 @@ spec:
         app: chaos-dr-app
     spec:
       terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: app
           image: ${APP_IMAGE}
           ports:
             - containerPort: 3000
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: PORT
               value: "3000"
@@ -98,6 +107,14 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: DB_PASSWORD
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: API_KEY
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /health/live
@@ -119,6 +136,9 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
