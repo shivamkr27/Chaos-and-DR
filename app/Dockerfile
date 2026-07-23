@@ -8,13 +8,12 @@ RUN npm ci --only=production
 FROM node:20.18-alpine
 WORKDIR /app
 
-# Non-root user for security — explicit numeric UID/GID so Kubernetes'
-# runAsNonRoot check can verify it without needing to resolve a username.
-RUN addgroup -g 1000 -S appgroup && adduser -u 1000 -S appuser -G appgroup
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY src/ ./src/
-COPY rds-ca-bundle.pem ./rds-ca-bundle.pem
+# Non-root user for security — node:alpine images already ship a "node"
+# user at UID 1000; reuse it (numeric UID so Kubernetes' runAsNonRoot check
+# can verify it without needing to resolve a username inside the container).
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --chown=node:node src/ ./src/
+COPY --chown=node:node rds-ca-bundle.pem ./rds-ca-bundle.pem
 
 USER 1000
 
