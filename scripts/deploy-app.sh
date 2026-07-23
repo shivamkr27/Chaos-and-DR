@@ -76,6 +76,7 @@ spec:
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000   # matches the numeric UID in app/Dockerfile
       containers:
         - name: app
           image: ${APP_IMAGE}
